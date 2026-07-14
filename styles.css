@@ -1,0 +1,43 @@
+/* ── 기본 리셋 & 전체 무대 ─────────────────────────────────
+   전체 화면 검정 배경, 스크롤 없음. #stage가 모든 레이어를 담는 무대. */
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden;background:#000;color:#ece9dd;font-family:'Space Mono',monospace;-webkit-font-smoothing:antialiased;user-select:none}
+#stage{position:fixed;inset:0;overflow:hidden;background:#000}
+canvas{position:absolute;inset:0;z-index:1;display:block;touch-action:none} /* 메인 렌더 캔버스(글리치 화면) */
+video{position:absolute;width:2px;height:2px;opacity:0;pointer-events:none;top:-10px;left:-10px} /* 숨김 <video> — 캔버스로만 그림 */
+
+/* ── 화면 위 필름 질감 오버레이 ────────────────────────────
+   스캔라인·필름 그레인·비네트로 아날로그 느낌을 더하는 장식 레이어. */
+.scan{position:absolute;inset:0;z-index:2;pointer-events:none;opacity:.4;background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0,rgba(0,0,0,0) 2px,rgba(0,0,0,.28) 3px,rgba(0,0,0,0) 4px)}
+.grain{position:absolute;inset:0;z-index:2;opacity:.08;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.vig{position:absolute;inset:0;z-index:2;pointer-events:none;background:radial-gradient(125% 120% at 50% 46%,transparent 54%,rgba(0,0,0,.8))}
+/* ── 좌상단 좌표 HUD ───────────────────────────────────────
+   현재 컷의 위도·경도(.v)와 행정동 주소(.addr) 표시. */
+.coord{position:absolute;top:24px;left:22px;z-index:4;pointer-events:none;line-height:.98;mix-blend-mode:difference}
+.coord .l{font-size:.54rem;letter-spacing:.36em;color:#8a9;text-transform:uppercase;margin-bottom:10px;mix-blend-mode:normal}
+.coord .v{font-weight:700;font-size:clamp(1.7rem,6.5vw,3.2rem);letter-spacing:-.01em}
+.coord .v.s{font-size:clamp(1.2rem,4.6vw,2.2rem);color:#cfc9ba}
+.addr{font-family:'Gowun Batang',serif;font-size:.95rem;color:#d8d2c3;margin-top:14px;mix-blend-mode:normal;text-shadow:0 1px 12px rgba(0,0,0,.8)}
+/* 좌하단 메타: 거리 · 심박 · 고도 · 사진/영상 타입 */
+.meta{position:absolute;left:22px;bottom:110px;z-index:4;pointer-events:none;font-size:.72rem;letter-spacing:.05em;color:#cfc9ba}
+.meta .b{font-weight:700}.meta .tag{color:#7a827a}
+.pn{position:absolute;right:22px;top:24px;z-index:4;pointer-events:none;font-size:.6rem;letter-spacing:.22em;color:#7a827a;text-align:right} /* 우상단 컷 파일명 */
+.stamp{position:absolute;right:22px;bottom:110px;z-index:4;pointer-events:none;font-size:.58rem;color:#7a827a;text-align:right;line-height:1.7} /* 우하단 코스·날짜 스탬프 */
+/* ── 하단 고도 능선 그래프 ─────────────────────────────────
+   .rdg: 능선 SVG, .rmarker: 현재 위치 마커, .rdgbg: 가독성용 그라데이션. */
+.rdg{position:absolute;left:0;bottom:16px;width:100%;height:82px;z-index:4;pointer-events:none;overflow:visible;display:block}
+.rmarker{position:absolute;left:0;bottom:16px;width:2px;height:82px;background:#f0a23c;box-shadow:0 0 9px #f0a23c;z-index:5;pointer-events:none;transform:translateX(-1px);will-change:left}
+.rmarker::after{content:'';position:absolute;top:-3px;left:-3px;width:8px;height:8px;border-radius:50%;background:#f0a23c;box-shadow:0 0 8px #f0a23c}
+.rdgbg{position:absolute;left:0;right:0;bottom:0;height:170px;z-index:3;pointer-events:none;background:linear-gradient(180deg,transparent 0%,rgba(0,0,0,.4) 50%,rgba(0,0,0,.75) 100%)}
+.hint{position:absolute;left:0;right:0;bottom:4px;z-index:4;text-align:center;font-size:.55rem;letter-spacing:.22em;color:#565e56;text-transform:uppercase;pointer-events:none;transition:opacity .5s} /* 조작 안내(첫 입력 시 사라짐) */
+
+/* ── 인트로 화면 ───────────────────────────────────────────
+   진입 시 덮는 시작 오버레이. .gone 클래스가 붙으면 페이드아웃되며 사라짐. */
+.intro{position:absolute;inset:0;z-index:20;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px;transition:opacity 1s}
+.intro.gone{opacity:0;pointer-events:none}
+.intro .t{font-family:'Gasoek One',sans-serif;font-weight:400;font-size:clamp(2.3rem,9vw,4.2rem);line-height:1.02;margin-bottom:18px}
+.intro .t .c{color:#cf4b34}
+.intro .s{color:#7a8278;max-width:30ch;line-height:1.7;margin-bottom:12px;font-size:.86rem}
+.intro .m{color:#4a5148;font-size:.6rem;letter-spacing:.16em;margin-bottom:30px}
+.intro .go{font-size:.66rem;letter-spacing:.26em;text-transform:uppercase;border:1px solid #3a413a;padding:14px 28px;color:#ece9dd;background:transparent;cursor:pointer;transition:.3s}
+.intro .go:hover{border-color:#cf4b34;color:#cf4b34}
