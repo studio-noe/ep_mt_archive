@@ -31,9 +31,14 @@ video{position:absolute;width:2px;height:2px;opacity:0;pointer-events:none;top:-
 .rdgbg{position:absolute;left:0;right:0;bottom:0;height:170px;z-index:3;pointer-events:none;background:linear-gradient(180deg,transparent 0%,rgba(0,0,0,.4) 50%,rgba(0,0,0,.75) 100%)}
 .hint{position:absolute;left:0;right:0;bottom:4px;z-index:4;text-align:center;font-size:.55rem;letter-spacing:.22em;color:#565e56;text-transform:uppercase;pointer-events:none;transition:opacity .5s} /* 조작 안내(첫 입력 시 사라짐) */
 
-/* ── 인트로 화면 ───────────────────────────────────────────
-   진입 시 덮는 시작 오버레이. .gone 클래스가 붙으면 페이드아웃되며 사라짐. */
+/* ── 인트로 화면 ─────────────────────────────────
+   진입 시 덮는 시작 오버레이. .gone 클래스가 붙으면 페이드아웃되며 사라짐.
+   배경 .ibg = 플라이오버(코스 전체를 훑는 지도의 시선) — "연속"을 먼저 보여주고
+   그 안으로 들어가 파편(TC 컷)을 만나는 서사. 영상이 없으면 그냥 검정 배경으로 폴백. */
 .intro{position:absolute;inset:0;z-index:20;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px;transition:opacity 1s}
+.intro .ibg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.5;z-index:0;filter:grayscale(1) contrast(1.2);pointer-events:none}
+.intro .idim{position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(115% 85% at 50% 50%,rgba(0,0,0,.3) 0%,rgba(0,0,0,.9) 100%)}
+.intro .t,.intro .s,.intro .m,.intro .go{position:relative;z-index:2}
 .intro.gone{opacity:0;pointer-events:none}
 .intro .t{font-family:'Gasoek One',sans-serif;font-weight:400;font-size:clamp(2.3rem,9vw,4.2rem);line-height:1.02;margin-bottom:18px}
 .intro .t .c{color:#cf4b34}
