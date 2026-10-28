@@ -1,0 +1,75 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Eunpyeong Mountain Archive — 손 스크럽</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Gowun+Batang:wght@700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Gasoek+One&family=Hahmlet:wght@100..900&family=Signika:wght@300..700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="styles.css"/>
+<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=fb7d672e6b7e192410934cc088dcd5b7&libraries=services&autoload=false"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js"></script>
+<style>
+/* ── B안 전용 UI: 손 미리보기 + 상태 ── */
+#hand{position:absolute;left:22px;top:24px;z-index:6;opacity:0;transition:opacity .6s;pointer-events:none}
+#hand.show{opacity:1}
+#hbox{position:relative;width:168px;height:126px}
+#hprev{width:168px;height:126px;object-fit:cover;transform:scaleX(-1);border:1px solid rgba(236,233,221,.22);
+  filter:grayscale(1) contrast(1.25) brightness(.8);display:block}
+#hcv{position:absolute;left:0;top:0;width:168px;height:126px;pointer-events:none}
+#htrack{position:relative;width:168px;height:3px;margin-top:6px;background:rgba(236,233,221,.16)}
+#hdot{position:absolute;top:-3px;left:0;width:9px;height:9px;border-radius:50%;background:#f0a23c;
+  box-shadow:0 0 8px #f0a23c;transform:translateX(-50%);transition:left .08s linear}
+.hstatus{margin-top:8px;font-family:'Space Mono',monospace;font-size:.64rem;letter-spacing:.08em;color:#8a9;line-height:1.75;text-shadow:0 0 4px #000}
+.hstatus.live{color:#f0a23c}
+.hstatus.off{color:#e2705c;max-width:190px;line-height:1.6}
+/* 카메라를 못 쓰면 빈 미리보기 상자는 감추고 안내만 남긴다 */
+#hand.nocam #hbox,#hand.nocam #htrack{display:none}
+/* ── 하단 게이지: 움직임 세기 + 다음 컷까지 남은 젓기 ── */
+#gauge{position:absolute;left:50%;transform:translateX(-50%);bottom:106px;z-index:6;
+  display:flex;align-items:center;gap:10px;opacity:0;transition:opacity .5s;pointer-events:none}
+#gauge.show{opacity:1}
+#gmeter{position:relative;width:150px;height:5px;background:rgba(236,233,221,.14);overflow:hidden}
+#gfill{position:absolute;left:0;top:0;height:100%;width:0;background:#7a827a;transition:width .06s linear}
+#gfill.hot{background:#f0a23c;box-shadow:0 0 8px #f0a23c}
+#gsegs{display:flex;gap:4px}
+#gsegs i{width:11px;height:5px;background:rgba(236,233,221,.16);display:block}
+#gsegs i.on{background:#f0a23c;box-shadow:0 0 7px #f0a23c}
+#glab{font-family:'Space Mono',monospace;font-size:.54rem;letter-spacing:.14em;color:#8a9;text-shadow:0 0 4px #000}
+/* 카메라를 쓰는 페이지라 좌표 블록은 아래로 비켜준다 */
+.coord{top:232px}
+.priv{margin-top:18px;font-family:'Space Mono',monospace;font-size:.52rem;letter-spacing:.1em;color:#6b736b;line-height:1.8}
+.bmark{position:absolute;left:22px;bottom:132px;z-index:4;font-family:'Space Mono',monospace;font-size:.52rem;
+  letter-spacing:.2em;color:#565e56;pointer-events:none}
+</style>
+</head><body>
+<div id="stage">
+  <canvas id="cv"></canvas>
+  <video id="vid" muted loop playsinline preload="auto"></video>
+  <div class="scan"></div><div class="grain"></div><div class="vig"></div><div class="rdgbg"></div>
+  <div id="hand">
+    <div id="hbox"><video id="hprev" muted playsinline></video><canvas id="hcv"></canvas></div>
+    <div id="htrack"><div id="hdot"></div></div>
+    <div class="hstatus" id="hstatus">카메라 대기</div>
+  </div>
+  <div class="coord" id="coord"><div class="l">위도 / 경도</div><div class="v" id="lat">37.59186</div><div class="v s" id="lon">126.91363</div><div class="addr" id="addr">—</div></div>
+  <div class="pn" id="pn">IMG</div>
+  <svg class="mmap" id="mmap" preserveAspectRatio="xMidYMid meet"></svg>
+  <div class="meta" id="meta"><span id="mkm">0.0km</span> / <span class="b" id="mhr">♥—</span> / <span id="mele">↑—</span> / <span class="tag" id="mtype"></span></div>
+  <div class="stamp">은둘길<br><span id="sdate">2026.10.25</span><br><span id="stime">08:23:28</span></div>
+  <svg class="rdg" id="rdg" viewBox="0 0 1000 100" preserveAspectRatio="none"></svg>
+  <div class="rmarker" id="rmarker"></div>
+  <div class="bmark">B / 손 스크럽</div>
+  <div id="gauge"><div id="gmeter"><div id="gfill"></div></div><div id="gsegs"></div><div id="glab">0 / 1</div></div>
+  <div class="hint" id="hint">손을 펴고 바닥을 긁듯 / 번갈아 저으면 기록이 간다</div>
+  <div class="intro" id="intro">
+    <video class="ibg" id="ibg" muted loop playsinline autoplay preload="auto" src="web/flyover.mp4"></video>
+    <div class="idim"></div>
+    <div class="t">Eunpyeong<br>Mountain<br><span class="c">Archive</span></div>
+    <div class="s">Paddle with your hands <br> as if they were feet</div>
+    <div class="m">은평둘레길 / 21.25KM / 사진 91 / 영상 47</div>
+    <button class="go" id="go">Dive in →</button>
+    <div class="priv">카메라로 손 움직임만 읽습니다<br>영상은 기기 안에서 처리하고 어디에도 보내지 않습니다<br>거부해도 드래그로 볼 수 있습니다</div>
+  </div>
+</div>
+<script src="app.js"></script>
+<script src="hand.js"></script>
+</body></html>

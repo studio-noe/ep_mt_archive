@@ -1,2 +1,6 @@
 .idea/
 .DS_Store
+media/
+.agents/
+.claude/
+skills-lock.json
