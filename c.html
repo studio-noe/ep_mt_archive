@@ -1,0 +1,226 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>은평 산 아카이브 — Paik Synthesis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Noto+Serif+KR:wght@500;700&display=swap" rel="stylesheet"/>
+<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=fb7d672e6b7e192410934cc088dcd5b7&libraries=services&autoload=false"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js"></script>
+<style>
+/* ── 팔레트: 프로젝트 자체 색에서 역할을 나눈다 ──
+   amber 현재/고도 · berry 고심박 · moss 저심박 · cyan 몸의 신호 · slate 지도/7월 */
+:root{
+  --amber:#f0a23c; --berry:#cf4b34; --moss:#7fa088; --cyan:#26dcff; --slate:#7d9bb5;
+  --mist:#ece9dd; --ink:#0a0f0c; --out:#8d8378;
+  --mono:'JetBrains Mono',monospace; --serif:'Noto Serif KR',serif;
+  --hr:var(--amber);                     /* 심박대에 따라 paik.js가 바꾼다 */
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#000;color:var(--mist);
+  font-family:var(--mono);-webkit-font-smoothing:antialiased}
+#stage{position:fixed;inset:0;overflow:hidden;background:#000}
+#cv{position:absolute;inset:0;display:block}
+#vid{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+
+/* ── CRT ── */
+#fx{position:absolute;inset:0;width:100%;height:100%;z-index:10;mix-blend-mode:screen;opacity:.34;pointer-events:none}
+.crt{position:absolute;inset:0;z-index:11;pointer-events:none;opacity:.55;
+  background:linear-gradient(rgba(18,16,16,0) 50%,rgba(0,0,0,.34) 50%);background-size:100% 3px}
+.bezel{position:absolute;inset:0;z-index:12;pointer-events:none;
+  box-shadow:inset 0 0 160px rgba(0,0,0,.85),inset 0 0 44px rgba(240,162,60,.08)}
+
+/* ── HUD: 기본은 물러나 있고, 만지면 올라온다 ── */
+.hud{position:absolute;inset:0;z-index:30;pointer-events:none;
+  opacity:.38;transition:opacity .45s ease}
+.hud.wake{opacity:1}
+.pan{position:absolute;pointer-events:auto;--ac:var(--amber);
+  text-shadow:0 1px 3px #000,0 0 10px rgba(0,0,0,.95)}
+.pan::before{content:'';position:absolute;left:0;top:2px;bottom:2px;width:2px;background:var(--ac);opacity:.75}
+.pan{padding-left:9px}
+.ph{font-size:8.5px;letter-spacing:.2em;color:var(--ac);font-weight:700;margin-bottom:3px;opacity:.9}
+.row{display:flex;gap:8px;align-items:baseline;font-size:10px;line-height:1.6;white-space:nowrap}
+.k{color:var(--out)}
+.v{color:var(--mist);font-weight:500;font-variant-numeric:tabular-nums}
+
+/* 좌상단: 타이틀 + 01 위치 */
+.tl{left:18px;top:16px;--ac:var(--slate)}
+.tl h1{margin:0 0 1px;font-family:var(--serif);font-size:15px;font-weight:700;letter-spacing:-.01em;white-space:nowrap}
+.tl .cut{font-size:8.5px;letter-spacing:.16em;color:var(--out)}
+.addrv{font-family:var(--serif);font-size:15px;font-weight:700;line-height:1.3;white-space:nowrap;margin:5px 0 1px}
+
+/* ── 지도: 데이터 패널이 아니라 화면을 가로지르는 레이어 ──
+   HUD 밖에 있어 흐려지지 않는다. 정중앙, 크게, 선은 머리카락처럼. */
+.mapwrap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  z-index:25;pointer-events:none;height:86vh;aspect-ratio:1000/1581}
+#mmap{width:100%;height:100%;display:block;overflow:visible;
+  filter:drop-shadow(0 0 2px rgba(0,0,0,1)) drop-shadow(0 0 7px rgba(0,0,0,.85))}
+/* 좌표는 고리 안쪽 빈 자리에 */
+#coord{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)!important;
+  text-align:center;text-shadow:0 1px 4px #000,0 0 14px rgba(0,0,0,.95)!important;
+  white-space:nowrap}
+#coord .row{display:block;font-size:clamp(15px,2.3vw,26px);line-height:1.25;letter-spacing:.02em;
+  font-weight:500;color:var(--mist)}
+#coord .k{display:block;font-size:9.5px;letter-spacing:.34em;color:var(--slate);
+  font-weight:700;margin-bottom:2px;opacity:.95}
+
+/* 우상단: 날짜/시각 */
+.tr{right:18px;top:16px;text-align:right;--ac:var(--out);padding:0 9px 0 0}
+.tr::before{left:auto;right:0}
+.tr .big{font-size:15px;font-weight:700;color:var(--amber);font-variant-numeric:tabular-nums}
+.tr .sm{font-size:9px;color:var(--out);letter-spacing:.14em}
+
+/* 우하단: 02 기록 — 가로 한 줄 */
+.br{right:18px;bottom:168px;text-align:right;--ac:var(--hr);padding:0 9px 0 0}
+.br::before{left:auto;right:0}
+.stats{display:flex;gap:16px;align-items:flex-end}
+.st{display:flex;flex-direction:column;align-items:flex-end;gap:1px}
+.st .lbl{font-size:8px;letter-spacing:.16em;color:var(--out)}
+.st .num{font-size:21px;font-weight:700;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.st .num .u{font-size:9px;color:var(--out);margin-left:2px;font-weight:400}
+.st.hr .num{color:var(--hr)}
+.st.ele .num{color:var(--cyan)}
+.st.seq .num{font-size:12px;color:var(--amber)}
+
+/* 좌하단: 03 손 추적 — 제일 작게 */
+.bl{left:18px;bottom:168px;--ac:var(--cyan)}
+.hgrid{display:flex;gap:8px;align-items:flex-start}
+#hbox{position:relative;width:78px;height:58px;flex:none;background:rgba(10,15,12,.5);
+  border:1px solid rgba(38,220,255,.22)}
+#hprev{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block;
+  filter:grayscale(1) contrast(1.3) brightness(.75)}
+#hcv{position:absolute;inset:0;width:100%;height:100%}
+#hstatus{font-size:9px;line-height:1.65;color:var(--out);white-space:pre-line;max-width:190px}
+#hstatus.live{color:var(--cyan)}
+#hstatus.off{color:var(--berry)}
+#hand.nocam #hbox{display:none}
+#gauge{display:flex;align-items:center;gap:7px;opacity:0;transition:opacity .4s;margin-top:5px}
+#gauge.show{opacity:1}
+#gmeter{position:relative;width:84px;height:4px;background:rgba(236,233,221,.13);overflow:hidden}
+#gfill{position:absolute;left:0;top:0;height:100%;width:0;background:#4a5a52;transition:width .06s linear}
+#gfill.hot{background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
+#gsegs{display:flex;gap:3px}
+#gsegs i{width:9px;height:4px;background:rgba(236,233,221,.15);display:block}
+#gsegs i.on{background:var(--cyan);box-shadow:0 0 6px var(--cyan)}
+#glab{font-size:8.5px;color:var(--out)}
+
+/* ── 04 고도 프로파일: 풀블리드(마커 정렬 때문에 가로 패딩 금지) ── */
+.btmdim{position:absolute;left:0;right:0;bottom:0;height:175px;z-index:20;pointer-events:none;
+  background:linear-gradient(180deg,transparent,rgba(0,0,0,.5) 50%,rgba(0,0,0,.85))}
+.bh{position:absolute;left:18px;bottom:122px;z-index:31;pointer-events:none;
+  font-size:8.5px;letter-spacing:.2em;color:var(--amber);opacity:.75;text-shadow:0 1px 3px #000}
+#rdg{position:absolute;left:0;bottom:22px;width:100%;height:92px;z-index:31;
+  pointer-events:none;overflow:visible;display:block}
+.rmarker{position:absolute;left:0;bottom:22px;width:1px;height:92px;background:rgba(255,255,255,.85);
+  z-index:32;pointer-events:none;will-change:left}
+.rmarker::after{content:'';position:absolute;top:-4px;left:-4px;width:9px;height:9px;
+  background:var(--amber);box-shadow:0 0 10px var(--amber)}
+.foot{position:absolute;left:0;right:0;bottom:4px;display:flex;justify-content:space-between;
+  padding:0 18px;font-size:8.5px;color:var(--out);z-index:33;pointer-events:none;
+  text-shadow:0 1px 3px #000}
+.hint{position:absolute;left:0;right:0;bottom:-999px}
+
+/* ── 인트로 ── */
+.intro{position:absolute;inset:0;z-index:60;background:#000;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;padding:28px;transition:opacity 1s}
+.intro.gone{opacity:0;pointer-events:none}
+.ibg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:grayscale(1) contrast(1.3);opacity:.42}
+.idim{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent,#000 72%)}
+.intro .t{position:relative;font-family:var(--serif);font-size:clamp(30px,7vw,54px);font-weight:700;line-height:1.08;letter-spacing:-.02em}
+.intro .t em{font-style:normal;color:var(--amber)}
+.intro .s{position:relative;margin-top:14px;font-size:11px;letter-spacing:.22em;color:var(--slate)}
+.intro .m{position:relative;margin-top:8px;font-size:10px;letter-spacing:.16em;color:var(--out)}
+.go{position:relative;margin-top:26px;background:var(--amber);color:#2a1400;border:0;padding:11px 26px;
+  font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.18em;cursor:pointer;
+  box-shadow:0 0 18px rgba(240,162,60,.45)}
+.priv{position:relative;margin-top:18px;font-size:9.5px;line-height:1.9;color:#6b736b}
+
+@media (max-width:900px){
+  .tl{left:12px;top:12px} .tr{right:12px;top:12px}
+  .bl{left:12px;bottom:150px} .br{right:12px;bottom:150px}
+  .tl h1{font-size:13px} .addrv{font-size:13px}
+  .st .num{font-size:16px} .stats{gap:11px}
+  .mapwrap{height:58vh;top:46%} #hbox{width:62px;height:46px}
+  #coord .row{font-size:15px}
+  #hstatus{max-width:140px;font-size:8.5px}
+  .btmdim{height:152px} .bh{bottom:108px;left:12px}
+  #rdg,.rmarker{bottom:20px;height:80px}
+  .foot{padding:0 12px}
+}
+@media (max-width:420px){ .st.ele,.tl .cut{display:none} }
+</style>
+</head><body>
+<div id="stage">
+  <canvas id="cv"></canvas>
+  <video id="vid" muted loop playsinline preload="auto"></video>
+  <canvas id="fx"></canvas>
+  <div class="crt"></div><div class="bezel"></div>
+  <div class="btmdim"></div>
+
+  <div class="hud" id="hud">
+    <!-- 좌상단: 타이틀 + 01 위치 -->
+    <div class="pan tl">
+      <h1>은평 산 아카이브</h1>
+      <div class="cut">CH-04 / <span id="pn">IMG</span></div>
+      <div class="addrv" id="addr">—</div>
+    </div>
+
+    <!-- 우상단: 날짜 / 시각 -->
+    <div class="pan tr">
+      <div class="sm" id="sdate">2026.10.25</div>
+      <div class="big" id="stime">08:23:28</div>
+    </div>
+
+    <!-- 우하단: 02 기록 -->
+    <div class="pan br">
+      <div class="ph">02 기록</div>
+      <div class="stats">
+        <div class="st"><span class="lbl">거리</span><span class="num" id="mkm">0.0<span class="u">km</span></span></div>
+        <div class="st hr"><span class="lbl">심박</span><span class="num" id="mhr">—<span class="u">bpm</span></span></div>
+        <div class="st ele"><span class="lbl">고도</span><span class="num" id="mele">—<span class="u">m</span></span></div>
+        <div class="st seq"><span class="lbl">미디어</span><span class="num" id="mtype">—</span></div>
+      </div>
+    </div>
+
+    <!-- 좌하단: 03 손 추적 -->
+    <div class="pan bl" id="hand">
+      <div class="ph">03 손 추적</div>
+      <div class="hgrid">
+        <div id="hbox"><video id="hprev" muted playsinline></video><canvas id="hcv"></canvas></div>
+        <div>
+          <div id="hstatus">카메라 대기</div>
+          <div id="gauge"><div id="gmeter"><div id="gfill"></div></div><div id="gsegs"></div><div id="glab">0 / 1</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 지도 레이어 (HUD 밖 — 흐려지지 않는다) -->
+  <div class="mapwrap">
+    <svg id="mmap" preserveAspectRatio="xMidYMid meet"></svg>
+    <div id="coord">
+      <div class="row"><span class="k">LAT</span><span class="v" id="lat">37.59186</span></div>
+      <div class="row"><span class="k">LON</span><span class="v" id="lon">126.91363</span></div>
+    </div>
+  </div>
+
+  <!-- 04 고도 프로파일 -->
+  <div class="bh">04 고도 프로파일</div>
+  <svg id="rdg" viewBox="0 0 1000 100" preserveAspectRatio="none"></svg>
+  <div class="rmarker" id="rmarker"></div>
+  <div class="foot"><span>0.0 km</span><span id="seqlab"></span><span>21.25 km</span></div>
+  <div class="hint" id="hint"></div>
+
+  <!-- 인트로 -->
+  <div class="intro" id="intro">
+    <video class="ibg" id="ibg" muted loop playsinline autoplay preload="auto" src="web/flyover.mp4"></video>
+    <div class="idim"></div>
+    <div class="t">은평 산<br><em>아카이브</em></div>
+    <div class="s">NAM JUNE PAIK SYNTHESIS</div>
+    <div class="m">은평둘레길 / 21.25KM / 사진 147 / 영상 72</div>
+    <button class="go" id="go">기록 속으로 →</button>
+    <div class="priv">손을 펴고 바닥을 긁듯 번갈아 저으면 기록이 넘어갑니다<br>카메라 영상은 기기 안에서만 처리하고 어디에도 보내지 않습니다<br>거부해도 드래그로 볼 수 있습니다</div>
+  </div>
+</div>
+<script src="app.js"></script>
+<script src="hand.js"></script>
+<script src="paik.js"></script>
+</body></html>

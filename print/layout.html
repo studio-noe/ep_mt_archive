@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>인쇄 구성안 — 지면 시안</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gasoek+One&family=Gowun+Batang:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#CD4E37;        /* 인쇄 단일톤 빨강 C3 M82 Y88 K5 */
+  --paper:#F3F3F3;
+  --z:.45;              /* 화면 배율. JS가 뷰포트에 맞춰 다시 잡는다 */
+  --mg:15mm;            /* 좌우 여백 */
+  --mt:14mm;            /* 위 여백 */
+  --mb:12mm;            /* 아래 여백 */
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#2a2622;color:#ddd;font:13px/1.5 "Space Mono",monospace;padding:70px 24px 80px}
+
+/* ── 조작부 (인쇄 안 됨) ── */
+#bar{position:fixed;top:0;left:0;right:0;z-index:9;display:flex;gap:18px;align-items:center;
+     padding:10px 20px;background:#18151380;backdrop-filter:blur(8px);border-bottom:1px solid #3a3530;font-size:12px}
+#bar b{color:var(--ink);font-weight:400}
+#bar label{display:flex;gap:6px;align-items:center;cursor:pointer;color:#bbb}
+#bar input[type=range]{width:150px}
+
+/* ── 지면 ── */
+.sheet{position:relative;background:var(--paper);color:#1a1a1a;height:148mm;width:210mm;
+       zoom:var(--z);margin:0 auto 26px;overflow:hidden;box-shadow:0 0 0 1px #0006,0 18px 40px #0007;
+       font-family:"Gowun Batang",serif}
+.spread{width:420mm}
+.cap{max-width:1100px;margin:0 auto 8px;color:#8d8578;font-size:12px;letter-spacing:.04em}
+.cap i{color:#c9a; font-style:normal}
+
+/* 판면 가이드 */
+.guide{position:absolute;inset:var(--mt) var(--mg) var(--mb);outline:1px dashed #cd4e3755;pointer-events:none;display:none}
+.fold{position:absolute;top:0;bottom:0;left:50%;width:0;border-left:1px dashed #cd4e3766;display:none}
+.fold::after{content:"거터";position:absolute;top:2mm;left:1mm;font:400 2.6mm "Space Mono";color:#cd4e3799}
+body.g .guide,body.g .fold{display:block}
+
+/* 글 */
+h1{font-family:"Gasoek One",sans-serif;font-weight:400;color:var(--ink);line-height:1.04}
+.ttl{position:absolute;left:20mm}
+.kr{font-size:11mm;letter-spacing:-.01em}
+.en{font-family:"Gasoek One",sans-serif;font-size:5.4mm;color:#1a1a1a;letter-spacing:.02em;margin-top:2mm}
+.hd{font-family:"Gowun Batang",serif;font-weight:700;font-size:5.6mm;color:var(--ink);letter-spacing:-.02em}
+.lede{font-size:4.2mm;line-height:1.75}
+.body{font-size:2.9mm;line-height:1.78;text-align:justify;word-break:keep-all}
+.body p+p{margin-top:1.4mm;text-indent:2.9mm}
+.two{column-count:2;column-gap:8mm}
+.num{font-family:"Space Mono",monospace;font-size:2.2mm;letter-spacing:.02em;color:#6b6b6b}
+.folio{position:absolute;bottom:6mm;font:400 2.4mm "Space Mono";color:#9a9a9a}
+
+/* 능선 띠 */
+.ridge{position:absolute;left:0;right:0;bottom:0;height:52mm}
+.ridge svg{display:block;width:100%;height:100%}
+.axis{position:absolute;left:0;right:0;bottom:1.5mm;height:3mm;font:400 2.2mm "Space Mono";color:#8a8a8a}
+.axis span{position:absolute;transform:translateX(-50%)}
+.silo{position:absolute;left:0;right:0;bottom:0;height:30mm;opacity:.12}
+.silo svg{display:block;width:100%;height:100%}
+
+/* 사진 띠 (듀오톤) */
+.strip{position:absolute;display:flex;gap:3mm;align-items:flex-end}
+.ph{background:var(--ink);overflow:hidden;flex:0 0 auto}
+.ph img{display:block;width:100%;height:100%;object-fit:cover;
+        filter:grayscale(1) contrast(1.12) brightness(1.04);mix-blend-mode:screen}
+body.raw .ph{background:transparent}
+body.raw .ph img{filter:none;mix-blend-mode:normal}
+.ccap{font:400 1.9mm/1.45 "Space Mono";color:#6b6b6b;margin-top:1.2mm;letter-spacing:-.01em}
+.ccap b{color:var(--ink);font-weight:400}
+
+/* 지도 */
+.mapwrap{position:absolute;display:flex;align-items:center;justify-content:center}
+.mapwrap img{height:134mm;width:auto;display:block}
+.scale{position:absolute;font:400 2.2mm "Space Mono";color:#7a7a7a}
+.scale i{display:block;height:1mm;border:.3mm solid #7a7a7a;border-top:0;margin-bottom:.8mm}
+
+/* QR */
+.qr{width:28mm;height:28mm;border:.4mm solid #1a1a1a;display:flex;align-items:center;justify-content:center;
+    text-align:center;font:400 2.2mm/1.4 "Space Mono";color:#555}
+.spec{font:400 2.5mm/1.62 "Space Mono";color:#3a3a3a;white-space:pre-wrap}
+
+@media print{
+  body{background:#fff;padding:0}
+  #bar,.cap{display:none}
+  .sheet{zoom:1;margin:0;box-shadow:none;break-after:page}
+  @page single{size:210mm 148mm;margin:0}
+  @page dbl{size:420mm 148mm;margin:0}
+  .sheet{page:single} .spread{page:dbl}
+}
+</style>
+</head>
+<body class="g">
+
+<div id="bar">
+  <b>인쇄 구성안</b> <span>A5 가로 210×148mm / 펼침 420×148 / 8쪽</span>
+  <label>배율 <input type="range" id="zm" min="20" max="100" value="45"><span id="zv">45%</span></label>
+  <label><input type="checkbox" id="gd" checked> 판면 가이드 (g)</label>
+  <label><input type="checkbox" id="rw"> 원본 컬러 (r)</label>
+</div>
+
+<!-- ───────────── p1 ───────────── -->
+<div class="cap">p1 <i>단면</i> 여는 면</div>
+<div class="sheet" id="s1">
+  <div class="guide"></div>
+  <div class="ttl" style="top:62mm">
+    <h1 class="kr">은평 산 아카이브</h1>
+    <div class="en">EUNPYEONG MOUNTAIN ARCHIVE</div>
+    <div class="lede" style="margin-top:9mm">은평의 산은 하나였다.</div>
+  </div>
+  <div class="num" style="position:absolute;left:20mm;top:14mm">2026.10.25 / 21.25KM / 6:33</div>
+  <div class="silo" id="silo"></div>
+  <div class="folio" style="left:20mm">1</div>
+</div>
+
+<!-- ───────────── p2-3 ───────────── -->
+<div class="cap">p2-3 <i>펼침</i> 하나의 산 : 능선 띠 풀블리드</div>
+<div class="sheet spread" id="s2">
+  <div class="guide"></div><div class="fold"></div>
+  <div style="position:absolute;left:var(--mg);top:var(--mt);width:180mm">
+    <div class="hd">하나의 산</div>
+    <div class="body two" style="margin-top:5mm;height:52mm">
+      <p style="text-indent:0">북한산에서 앵봉산까지. 은평의 산은 능선을 따라 하나로 이어진다. 산에는 경계가 없다.</p>
+      <p>선을 그은 것은 사람이다. 행정구역이 나뉘고, 둘레길에는 저마다의 이름과 번호가 붙었다. 은평과 고양을 가르는 경계도 이 산을 지난다. 다만 그 선은 능선을 가로지르지 않는다. 능선을 따라 함께 간다.</p>
+      <p>2026년 10월 25일, 그 선들을 따라 산을 한 바퀴 돌았다. 21.25킬로미터, 여섯 시간 삼십삼 분, 누적 상승 1,171미터. 아래의 능선은 그날 발밑을 지나간 높이를 옮겨 놓은 것이다. 점 하나에는 사진 한 장이나 영상 하나가 담겨 있고, 점의 짙고 옅음은 그 순간의 심박을 나타낸다.</p>
+      <p>산을 오르내리는 동안 몸은 수치로 남았고, 지나온 길은 점으로 쌓였다.</p>
+    </div>
+  </div>
+  <div style="position:absolute;right:var(--mg);top:var(--mt);text-align:right;font-family:'Space Mono',monospace">
+    <div style="font-size:9mm;color:var(--ink);line-height:1.1">21.25<span style="font-size:4mm">KM</span></div>
+    <div class="num" style="margin-top:3mm;line-height:2">1,171M 누적상승<br>6:33 경과 / 4:52 이동<br>141 평균심박 / 179 최고<br>18-233M 고도</div>
+  </div>
+  <div class="num" style="position:absolute;left:var(--mg);top:84mm">
+    219 CUTS &nbsp;/&nbsp; ○ 사진 147 &nbsp; ◎ 영상 72 &nbsp; ◇ 7월 답사 81 &nbsp;/&nbsp; 농도 = 심박 ■100% ■60% ■30%
+  </div>
+  <div class="ridge" id="ridge"></div>
+  <div class="axis" id="axis"></div>
+  <div class="folio" style="left:var(--mg);bottom:54mm">2</div>
+  <div class="folio" style="right:var(--mg);bottom:54mm">3</div>
+</div>
+
+<!-- ───────────── p4-5 ───────────── -->
+<div class="cap">p4-5 <i>펼침</i> 몸의 시선 : 사진 10장 — <b>원본 세로비 유지 → 1행 10컷 띠</b>(격자 5×2는 세로 사진이라 안 들어감)</div>
+<div class="sheet spread" id="s4">
+  <div class="guide"></div><div class="fold"></div>
+  <div style="position:absolute;left:var(--mg);top:var(--mt);width:200mm">
+    <div class="hd">몸의 시선</div>
+  </div>
+  <div class="strip" id="strip" style="left:var(--mg);top:26mm"></div>
+  <div class="body" style="position:absolute;left:var(--mg);bottom:var(--mb);width:124mm">
+    <p style="text-indent:0">달리는 동안 카메라는 흔들렸다. 숨이 가빠질수록 화면도 함께 흔들렸다.</p>
+    <p>여기 놓인 열 장의 사진은 잘 찍힌 장면을 고른 것이 아니다. 코스를 열 구간으로 나누고, 각 구간에서 심박이 가장 높았던 순간을 골랐다. 초점이 흐려진 풍경도, 비슷한 장면이 거듭 찍힌 자리도 그대로 두었다.</p>
+  </div>
+  <div class="body" style="position:absolute;left:150mm;bottom:var(--mb);width:124mm">
+    <p style="text-indent:0">선명하지 않은 사진에는 그때의 호흡이 남아 있고, 여러 번 찍힌 자리에는 오래 머문 시간이 남아 있다.</p>
+    <p>몸은 경계를 세지 않는다. 은평인지 고양인지, 몇 번 코스를 지나고 있는지 알지 못한다. 그저 다음 발을 내디딜 곳을 향해 움직인다.</p>
+  </div>
+  <div class="num" style="position:absolute;right:var(--mg);bottom:var(--mb);width:90mm;text-align:right">
+    단일톤 변환 : GRAY → LEVEL 18-88% → ORDERED 8×8 → #CD4E37 / #F3F3F3<br>입고 1BIT 1200DPI
+  </div>
+  <div class="folio" style="left:var(--mg)">4</div>
+  <div class="folio" style="right:var(--mg)">5</div>
+</div>
+
+<!-- ───────────── p6-7 ───────────── -->
+<div class="cap">p6-7 <i>펼침</i> 지도의 시선 : 글은 왼쪽 면, 지도는 오른쪽 면 — 지도 높이 120mm가 <b>판형 상한</b>(148 − 14 − 12 = 122)</div>
+<div class="sheet spread" id="s6">
+  <div class="guide"></div><div class="fold"></div>
+  <div style="position:absolute;left:var(--mg);top:var(--mt);width:180mm;bottom:var(--mb)">
+    <div class="hd">위에서 보면 선이 하나다</div>
+    <div class="body two" style="margin-top:4mm;height:106mm;font-size:3.05mm">
+      <p style="text-indent:0">같은 하루를 위에서 내려다보면 하나의 선이 된다. 시작과 끝이 맞닿은 닫힌 고리다.</p>
+      <p>고리 안쪽은 비어 있다. 그곳에는 도시가 들어서 있다. 산은 도시를 둘러싸고, 도시는 산을 경계 삼아 살아간다.</p>
+      <p>점선은 행정구역의 경계다. 서쪽으로 접어들면 경계선은 달려온 길과 거의 겹친다.</p>
+      <p>우연은 아니다. 은평과 고양을 가르는 경계는 산을 지난다. 산에서 구역을 나눌 때 능선은 자연스러운 기준이 된다. 산등성이에 내린 비는 양쪽으로 갈라져 서로 다른 물길을 따라 흐른다. 능선은 물이 갈라지는 자리이자, 서로 다른 곳으로 흘러가는 물이 시작되는 자리다. 분수령이라는 이름도 거기서 왔다.</p>
+      <p>실제로 경계의 높이를 재어 보았다. 은평과 고양을 가르는 7.49킬로미터 가운데 70.3퍼센트가 분수령에 해당했다. 반면 은평과 마포 사이에서는 분수령으로 판정된 구간이 없었다. 같은 행정구역의 경계라도 산을 지날 때와 도시를 지날 때 그 모습은 달랐다.</p>
+      <p>산에서는 능선이 경계가 되고, 도시에서는 또 다른 선들이 경계를 만든다.</p>
+      <p>그래서 묘한 일이 생긴다. 산을 하나로 잇는 선과 산을 둘로 나누는 선이 같다. 능선을 달린다는 것은 곧 경계 위를 달린다는 뜻이다.</p>
+      <p>이 길을 한 바퀴 도는 동안 구의 경계를 열여섯 번 넘었다. 은평과 고양 사이를 열 번, 은평과 서대문 사이를 여섯 번. 은평구 안에서는 열네 개 행정동을 지났다. 정확히는 경계를 열여섯 번 가로지른 것이 아니다. 경계 위를 달리다가 열여섯 번 한쪽으로 내려섰다. 지도 위의 빈 원은 그 자리다.</p>
+      <p>하지만 걷고 달리는 동안에는 그 어떤 경계도 발걸음을 멈추게 하지 않았다.</p>
+      <p>두 펼침면은 같은 하루를 기록하고 있다. 하나는 몸이 본 산이고, 다른 하나는 지도가 본 산이다.</p>
+    </div>
+  </div>
+  <div class="mapwrap" style="left:210mm;right:0;top:7mm;bottom:7mm">
+    <img src="boundary.svg" alt="은둘길 트랙 + 행정경계">
+  </div>
+  <div class="scale" style="right:var(--mg);top:var(--mt)">
+    N37.636 E126.899 — N37.582 E126.996<br>1:50,600
+  </div>
+  <div class="num" style="position:absolute;right:var(--mg);bottom:var(--mb);width:70mm;text-align:right">
+    ─ ─ 구 경계 &nbsp; ○ 경계 통과 16 &nbsp; ● 219 CUTS<br>GPS 14,604 PTS / 외부 지도 타일 없음
+  </div>
+  <div class="folio" style="left:var(--mg)">6</div>
+  <div class="folio" style="right:var(--mg)">7</div>
+</div>
+
+<!-- ───────────── p8 ───────────── -->
+<div class="cap">p8 <i>단면</i> 닫는 면</div>
+<div class="sheet" id="s8">
+  <div class="guide"></div>
+  <div style="position:absolute;left:var(--mg);top:var(--mt);width:180mm">
+    <div class="hd">흔들린 채로 보려면</div>
+    <div class="body" style="margin-top:4mm;width:112mm">
+      <p style="text-indent:0">219개의 기록은 종이 위에 모두 담기지 못한다. 아래 주소에서는 사진과 영상이 지나온 능선을 따라 놓인다. 점을 따라 움직이면 산의 높이와 그날의 심박이 함께 드러난다.</p>
+      <p>종이 위에 남은 것은 일부이고, 나머지는 그 길 위에 있다.</p>
+    </div>
+  </div>
+  <div style="position:absolute;right:var(--mg);top:var(--mt);text-align:center">
+    <div class="qr">QR 28×28<br>검정 권장</div>
+    <div class="num" style="margin-top:2mm;font-size:1.9mm">STUDIO-NOE.GITHUB.IO<br>/EP_MT_ARCHIVE</div>
+  </div>
+  <div class="spec two" style="position:absolute;left:var(--mg);top:64mm;width:180mm;column-gap:7mm">본촬영   2026.10.25 (토)  08:23:28 - 14:56:36
+         21.25km / 6시간 33분 / 누적상승 1,171m
+         평균심박 141 / 최고 179 / 고도 18-233m
+
+답사     2026.07.12 (일)  06:12 - 11:34
+         22.99km
+
+기록     219컷 (사진 147 / 영상 72)
+         10월 138 + 7월 81
+         전 구간 커버, 최대 공백 1.28km
+
+장비     COROS (GPS 14,607점, 1초 간격)
+         iPhone 기본 카메라 / TimeStamp Camera
+
+경계     구 경계 통과 16회
+         은평↔고양시덕양 10 / 은평↔서대문 6
+         은평구 안에서 행정동 14개 통과
+         구간 : 은평 16.97 / 서대문 2.27 / 고양 2.00km
+
+좌표, 시각, 고도, 심박은 전부 실측값이다.
+보기 좋게 옮긴 수치는 하나도 없다.</div>
+  <div class="num" style="position:absolute;left:var(--mg);bottom:var(--mb);width:180mm">
+    은평구 산 문화콘텐츠 기록 프로그램 / 은평로컬기록가 2기 &nbsp;·&nbsp; 기록 NOE
+  </div>
+  <div class="folio" style="right:var(--mg)">8</div>
+</div>
+
+<script src="data.js"></script>
+<script>
+const D = window.D, PH = D.photos.slice().sort((a,b)=>a.km-b.km);
+const T = D.total, PR = D.prof;
+const EMIN = Math.min(...PR.map(p=>p[1])), EMAX = Math.max(...PR.map(p=>p[1]));
+
+// 능선 좌표계 : viewBox 0 0 1000 100, 세로는 꽉 채운다 (preserveAspectRatio=none)
+const X = km => km / T * 1000;
+const Y = e  => 100 - (e - EMIN) / (EMAX - EMIN) * 86 - 4;
+const eleAt = km => {
+  if (km <= PR[0][0]) return PR[0][1];
+  const last = PR[PR.length-1];
+  if (km >= last[0]) return last[1];
+  for (let i=1;i<PR.length;i++) if (PR[i][0] >= km) {
+    const [k0,e0]=PR[i-1], [k1,e1]=PR[i];
+    return e0 + (e1-e0) * (km-k0) / (k1-k0);
+  }
+  return last[1];
+};
+const line = PR.map((p,i)=>(i?'L':'M')+X(p[0]).toFixed(2)+','+Y(p[1]).toFixed(2)).join(' ');
+
+// 심박 → 농도 3단계. app.js hrHex와 같은 분기 ((hr-120)/60 > .6 / > .3)
+const dens = hr => { const t=(hr-120)/60; return t>.6 ? 1 : t>.3 ? .6 : .3; };
+
+// p2-3 능선 띠
+document.getElementById('ridge').innerHTML =
+  `<svg viewBox="0 0 1000 100" preserveAspectRatio="none">
+     <path d="${line} L1000,100 L0,100 Z" fill="var(--ink)" opacity=".10"/>
+     <path d="${line}" fill="none" stroke="var(--ink)" stroke-width="1.1" vector-effect="non-scaling-stroke"/>
+     ${PH.map(p=>{
+        const x=X(p.km).toFixed(2), y=Y(eleAt(p.km)).toFixed(2), o=dens(p.hr);
+        const r = p.t==='v' ? 3.4 : 2.4;
+        return p.d===7
+          ? `<rect x="${x-r}" y="${y-r}" width="${r*2}" height="${r*2}" transform="rotate(45 ${x} ${y})" fill="var(--ink)" opacity="${o}"/>`
+          : `<circle cx="${x}" cy="${y}" r="${r}" fill="var(--ink)" opacity="${o}"/>`;
+     }).join('')}
+   </svg>`;
+
+// p2-3 거리축
+document.getElementById('axis').innerHTML =
+  [0,5,10,15,20,T].map(k=>`<span style="left:${(k/T*100).toFixed(2)}%">${k===T?T.toFixed(2):k}${k===T?'KM':''}</span>`).join('');
+
+// p1 능선 실루엣 (p2-3과 같은 곡선)
+document.getElementById('silo').innerHTML =
+  `<svg viewBox="0 0 1000 100" preserveAspectRatio="none"><path d="${line} L1000,100 L0,100 Z" fill="var(--ink)"/></svg>`;
+
+// p4-5 사진 띠. 원본 비율 유지 → 폭이 컷마다 다르다
+const SEL = ['IMG_8828','TC_00058','TC_00054','TC_00027','IMG_8920','IMG_8979','IMG_9025','IMG_9064','IMG_9081','IMG_9113'];
+const AR  = {TC_00058:1600/2133, TC_00054:1600/2844, TC_00027:1600/2133}; // 7월은 4:3 / 3:2 섞임
+const H   = (390 - 3*9) / SEL.reduce((s,n)=>s+(AR[n]!==undefined?AR[n]:1600/2844),0); // 10컷 한 행이 판면 폭을 정확히 채우는 높이
+document.getElementById('strip').innerHTML = SEL.map((n,i)=>{
+  const p = PH.find(x=>x.n===n) || {};
+  const ar = AR[n] !== undefined ? AR[n] : 1600/2844;
+  return `<div style="flex:0 0 auto;width:${(H*ar).toFixed(1)}mm">
+    <div class="ph" style="height:${H.toFixed(1)}mm"><img src="../web/${n}.jpg" alt="${n}"></div>
+    <div class="ccap"><b>${String(i+1).padStart(2,'0')}</b> ${p.km!=null?p.km.toFixed(2):'?'}km<br>${p.hr}bpm ${p.ele}m<br>${p.tm}</div>
+  </div>`;
+}).join('');
+
+// 띠가 판면을 넘는지 확인해서 콘솔에 남긴다
+{
+  const w = SEL.reduce((s,n)=>s + H*(AR[n]!==undefined?AR[n]:1600/2844), 0) + 3*(SEL.length-1);
+  console.log('p4-5 사진 띠 폭', w.toFixed(1)+'mm', '/ 판면', (420-15*2)+'mm', w<=390?'OK':'넘침');
+}
+
+// 조작부
+const zm=document.getElementById('zm'), zv=document.getElementById('zv');
+const setZ = v => { document.documentElement.style.setProperty('--z', v/100); zv.textContent = v+'%'; };
+zm.oninput = e => setZ(e.target.value);
+const fit = Math.max(20, Math.min(100, Math.floor((innerWidth-60)/(420*96/25.4)*100)));
+zm.value = fit; setZ(fit);
+document.getElementById('gd').onchange = e => document.body.classList.toggle('g', e.target.checked);
+document.getElementById('rw').onchange = e => document.body.classList.toggle('raw', e.target.checked);
+onkeydown = e => {
+  if (e.key==='g') document.getElementById('gd').click();
+  if (e.key==='r') document.getElementById('rw').click();
+};
+</script>
+</body>
+</html>
