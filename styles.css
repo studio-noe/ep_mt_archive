@@ -4,6 +4,9 @@
 html,body{height:100%;overflow:hidden;background:#000;color:#ece9dd;font-family:'Space Mono',monospace;-webkit-font-smoothing:antialiased;user-select:none}
 #stage{position:fixed;inset:0;overflow:hidden;background:#000}
 canvas{position:absolute;inset:0;z-index:1;display:block;touch-action:none} /* 메인 렌더 캔버스(글리치 화면) */
+/* ★canvas 는 대체요소라 inset:0 만으로는 안 늘어난다(자기 width 속성이 레이아웃 폭이 된다).
+   100% 로 못박아야 app.js 가 #stage 박스를 재서 맞춘 해상도와 화면이 일치한다. */
+#cv{width:100%;height:100%}
 video{position:absolute;width:2px;height:2px;opacity:0;pointer-events:none;top:-10px;left:-10px} /* 숨김 <video> — 캔버스로만 그림 */
 
 /* ── 화면 위 필름 질감 오버레이 ────────────────────────────

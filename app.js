@@ -64,9 +64,28 @@ function GLITCH_CHECK(){
 }
 window.GLITCH_CHECK=GLITCH_CHECK;
 // 창 크기 변화 대응: 캔버스 해상도(DPR 반영) 갱신 + 버퍼 재할당
-function resize(){DPR=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0);
+//
+// ★W/H 를 innerWidth/innerHeight 에서 읽지 말 것. iOS 사파리에서 그 둘은 레이아웃 폭이 아니라
+//   **핀치줌이 걸린 보이는 영역(visual viewport)** 을 돌려준다. 한 번 확대한 상태에서 resize 가
+//   걸리면 W 가 실제 폭의 절반쯤으로 잡히고, 그 값으로 cv.style.width 를 박아버리니
+//   캔버스가 화면 좌상단에 작게 눌러앉는다(NOE 신고: "배경 이미지 꽉 안참", 실측 52%).
+//   같은 W 를 쓰는 능선 마커도 같은 비율로 왼쪽에 어긋났다(실측 18.4%, 정답 34.8%).
+//   대신 #stage(position:fixed;inset:0) 의 박스를 잰다.
+//   ★★캔버스 자신을 재면 안 된다 — canvas 는 대체요소(replaced element)라 width:auto 면
+//     `inset:0` 이 늘려주는 게 아니라 **자기 width 속성이 그대로 레이아웃 폭이 된다.**
+//     그래서 rect → W → cv.width → rect 로 되먹임이 돌아 한 프레임마다 두 배씩 커진다
+//     (실제로 3355만 px 까지 치솟는 걸 봤다). #stage 는 평범한 div 라 그 고리가 없다.
+const stage=cv.parentElement;
+function boxOf(){const r=(stage||cv).getBoundingClientRect();
+  return [Math.round(r.width)||innerWidth,Math.round(r.height)||innerHeight];}
+function resize(){DPR=Math.min(2,devicePixelRatio||1);
+  [W,H]=boxOf();
+  cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);
   [baseC,baseX]=mkC();[rC,rCx]=mkC();[gC,gCx]=mkC();[bC,bCx]=mkC();[compC,compX]=mkC();if(cur>=0)applySource();}
 addEventListener('resize',resize);
+// resize 이벤트만으로는 iOS 주소창 접힘·회전을 놓친다. 박스가 실제로 변했을 때만 다시 잡는다.
+if(window.ResizeObserver&&stage)new ResizeObserver(()=>{const [w,h]=boxOf();
+  if(w!==W||h!==H)resize();}).observe(stage);
 
 // ── 현재 컷 소스 로딩 ───────────────────────────────────────────
 //  cur = 현재 보고 있는 컷 인덱스. 사진은 web/<n>.jpg, 영상은 web/<n>.mp4 로드.

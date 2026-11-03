@@ -152,7 +152,9 @@ void main(){
 
   // 절반 해상도로 그린다. CSS가 늘려주고, 거친 래스터가 오히려 CRT에 맞는다.
   function size(){
-    const w=Math.max(2,Math.round(innerWidth/2)),h=Math.max(2,Math.round(innerHeight/2));
+    // ★innerWidth 는 iOS 에서 핀치줌 배율을 탄다(app.js resize 주석 참고). 레이아웃 박스를 쓴다.
+    const r=cvs.getBoundingClientRect();
+    const w=Math.max(2,Math.round((r.width||innerWidth)/2)),h=Math.max(2,Math.round((r.height||innerHeight)/2));
     if(cvs.width!==w||cvs.height!==h){cvs.width=w;cvs.height=h;}
   }
   addEventListener('resize',size); size();
