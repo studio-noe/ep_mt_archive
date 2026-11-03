@@ -52,7 +52,7 @@ function wake(){
 // ── setPhoto 가로채기 ──────────────────────────────────────────
 //  app.js가 넣은 문자열을 롤링 숫자로 다시 쓴다.
 //  함수 선언이라 재할당하면 app.js 내부 호출도 이 래퍼를 탄다.
-const seqLab=document.getElementById('seqlab'),root=document.documentElement;
+const seqLab=document.getElementById('seqlab'),chno=document.getElementById('chno'),root=document.documentElement;
 const _setPhoto=setPhoto;
 setPhoto=function(i){
   _setPhoto(i);
@@ -67,6 +67,8 @@ setPhoto=function(i){
   const g=(typeof stackOf==='function')?stackOf(cur):[cur];
   mtype.textContent=(p.t==='v'?'▶ 영상':'◻ 사진')+(g.length>1?' '+(g.indexOf(cur)+1)+'/'+g.length:'');
   if(seqLab)seqLab.textContent=(cur+1)+' / '+PH.length+'   '+(p.d===7?'7월 답사':'10월 본촬영');
+  // 자막의 CH 번호. 한때 'CH-04'로 박혀 있어서 어느 컷이든 04 였다
+  if(chno)chno.textContent=String(cur+1).padStart(2,'0');
   wake();                                          // 컷이 바뀌면 HUD도 같이 깨어난다
 };
 
@@ -74,10 +76,15 @@ setPhoto=function(i){
 //  app.js는 96px짜리 미니맵 기준으로 그린다. 중앙 대형으로 쓰면
 //  선이 굵고 점이 덩어리로 보이므로 여기서 줄인다.
 (function(){
-  const mp=document.querySelector('#mmap path');
-  if(mp){mp.setAttribute('stroke-width','0.75');   // non-scaling-stroke라 단위는 px
-         mp.setAttribute('opacity','0.85');
-         mp.setAttribute('stroke','#ece9dd');}
+  // ★path 가 둘이다 — 앞이 7월 보조선, 뒤가 10월 본선.
+  //   querySelector 하나만 잡으면 10월 선이 미니맵 굵기(1.3px)로 남는다.
+  const mps=document.querySelectorAll('#mmap path');
+  mps.forEach((mp,i)=>{
+    const july=mps.length>1&&i===0;
+    mp.setAttribute('stroke-width',july?'0.5':'0.75');   // non-scaling-stroke라 단위는 px
+    mp.setAttribute('opacity',july?'0.3':'0.85');
+    mp.setAttribute('stroke','#ece9dd');
+  });
   if(typeof mdot!=='undefined'&&mdot)mdot.setAttribute('r','13');
   if(typeof mglow!=='undefined'&&mglow)mglow.setAttribute('r','34');
 })();
@@ -106,18 +113,25 @@ void main(){
 
   float scan=sin(uv.y*u_res.y*1.15)*0.14;
 
-  // RGB 인광 분리 — 프로젝트의 채널 분리색(주황/시안)에 맞춘다
+  // RGB 인광 분리. ★가중치는 셋 다 같아야 한다.
+  //  분리는 세 채널을 '다른 자리에서' 뽑는 데서 나온다(r 은 +disp, bl 은 -disp*0.8).
+  //  거기에 가중치까지 다르게 주면 그건 분리가 아니라 색을 칠하는 것이다.
+  //  옛 값 0.60 / 0.38 / 0.66 은 초록을 눌러 주황-시안으로 기울였고, #fx 가
+  //  mix-blend-mode:screen 이라 그 색이 사진 위에 그대로 더해졌다.
+  //  app.js 의 채널 분리에서 고정 색조를 걷어낸 것과 같은 이유로 중립으로 되돌린다.
+  //  0.55 는 옛 세 값의 평균이라 밝기는 그대로다.
   float r=hash(vec2(uv.x+disp,uv.y)*220.0+t*7.0);
   float g2=hash(vec2(uv.x,uv.y)*220.0+t*5.0);
   float bl=hash(vec2(uv.x-disp*0.8,uv.y)*220.0+t*9.0);
-  vec3 col=vec3(r*0.60,g2*0.38,bl*0.66)*(0.09+b*0.30);
+  vec3 col=vec3(r,g2,bl)*0.55*(0.09+b*0.30);
 
   float sn=hash(uv*900.0+t*40.0);
   col+=(sn-0.5)*(0.04+0.18*tear*(0.4+b));
 
   // 수직 싱크 바
   float vs=smoothstep(0.0,0.05,abs(fract(uv.y-t*0.14)-0.025));
-  col=mix(col+vec3(0.15,0.09,0.03)*(0.5+b),col,vs);
+  // 싱크 바도 중립. 옛 vec3(0.15,0.09,0.03) 은 따뜻한 주황을 얹고 있었다
+  col=mix(col+vec3(0.09)*(0.5+b),col,vs);
 
   col-=scan;
   float vig=uv.x*uv.y*(1.0-uv.x)*(1.0-uv.y);

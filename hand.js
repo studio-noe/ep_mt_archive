@@ -12,10 +12,12 @@ const HAND={
   AMP:0.045,          // 한 번 젓는 것으로 인정할 최소 진폭(화면 높이 비율). 올리면 크게 저어야 한다
   GAP:140,            // 젓기 사이 최소 간격(ms). 속도 상한
   IDLE:2500,          // 이만큼 쉬면 케이던스 표시만 초기화 (검출 상태는 건드리지 않는다)
-  PER:1,              // 몇 번 저어야 한 컷 넘어가는가
+  PER:2,              // 몇 번 저어야 한 컷 넘어가는가.
+                      //  ★방향이 꺾일 때마다 1로 세므로 왕복 한 번 = 2. 즉 PER:2 가 "한 번 젓기".
+                      //  1로 두면 왕복에 두 컷이 넘어가 너무 빠르다(사진이 선명해질 틈이 없다).
   FPS:24,             // 추론 주기. 올리면 반응이 빠르고 배터리를 더 먹는다
   on:false, hands:null,
-  sign:0, base:null, steps:0, prog:0, lastTrig:0, lastStep:0, gaps:[]
+  steps:0, prog:0, lastTrig:0, lastStep:0, gaps:[]
 };
 // 진단값 — 어디서 막혔는지 화면에 그대로 보여준다
 const DBG={mod:'대기',cam:'대기',vid:'-',infer:0,fps:0,hits:0,seen:false,paws:0,sig:0,err:''};
@@ -51,37 +53,53 @@ function curledCount(lm){
 // 완전히 편 상태를 요구하면 안 잡힌다. 말린 손가락 2개 이하면 펼친 것으로 본다.
 function isPaw(lm){return curledCount(lm)<=2;}
 
-// ── 젓기 검출 (개헤엄) ──────────────────────────────────────────
-//  양손이면 두 손의 높이 차(왼-오른)를 신호로 쓴다. 번갈아 저으면 이 값이
-//  규칙적으로 부호를 바꾼다. 한 손만 보이면 그 손의 느린 평균 대비 흔들림을 쓴다.
-//  슈미트 트리거: +AMP를 넘겼다가 -AMP 아래로 내려갈 때 한 번으로 센다.
-//  (단순 영점 교차는 손 떨림에 과하게 세진다)
-function swingSignal(hands){
-  if(hands.length>=2){
-    const s=hands.slice().sort((a,b)=>a.x-b.x);   // 화면 왼쪽 손이 항상 앞에 오도록
-    HAND.base=null;
-    return s[0].y-s[1].y;
+// ── 젓기 검출 : 손마다 따로, 방향이 꺾일 때 센다 ───────────────
+//  ★옛 방식은 "두 손의 높이 차"를 신호로 썼다. 번갈아 저을 때만 작동하고,
+//    양손을 나란히 흔들면 차이가 0이라 아무리 세게 흔들어도 안 넘어갔다.
+//    게다가 +AMP 다음엔 반드시 -AMP 를 요구해서, 한쪽 손이 계속 높으면
+//    그 조건이 영영 안 와 영구히 멈췄다. 손이 1↔2개로 바뀌면 기준도 리셋됐다.
+//  ★지금은 손마다 독립이다. 그 손의 y 가 **방향을 꺾고**, 꺾이기 직전 극점에서
+//    AMP 이상 움직였으면 한 번으로 센다(피크 투 피크). 위상도 기준선도 필요 없다.
+//    → 양손 번갈아 = 두 배로 빠르게, 양손 나란히 = 그대로 센다, 한 손 = 그대로 센다.
+const TRK=new Map();                 // key(L/R) → {y, dir, ext, last}
+
+function trackSwings(paws,now){
+  // 화면 기준 좌/우로 가른다. 손이 하나면 'S'
+  const keyed=paws.length>=2
+    ? paws.slice().sort((a,b)=>a.x-b.x).map((h,i)=>[i?'R':'L',h])
+    : [['S',paws[0]]];
+  const live=new Set(keyed.map(([k])=>k));
+  for(const k of [...TRK.keys()])if(!live.has(k))TRK.delete(k);
+
+  let hits=0, amp=0;
+  for(const [k,h] of keyed){
+    let t=TRK.get(k);
+    if(!t){TRK.set(k,{y:h.y,dir:0,ext:h.y,last:0});continue;}
+    const dy=h.y-t.y;
+    if(Math.abs(dy)<0.0015){t.y=h.y;continue;}      // 미세 떨림은 방향으로 치지 않는다
+    const dir=dy>0?1:-1;
+    if(t.dir!==0&&dir!==t.dir){                      // 방향이 꺾였다 = 한 번 저은 끝
+      const travel=Math.abs(t.y-t.ext);
+      amp=Math.max(amp,travel);
+      if(travel>=HAND.AMP&&now-t.last>=HAND.GAP){hits++;t.last=now;}
+      t.ext=t.y;                                     // 새 극점
+    }
+    t.dir=dir; t.y=h.y;
+    amp=Math.max(amp,Math.abs(h.y-t.ext));
   }
-  const y=hands[0].y;
-  // 기준선이 빠르면 느린 젓기를 따라가버려 신호가 0으로 죽는다. 아주 느리게 둔다.
-  HAND.base=HAND.base===null?y:HAND.base+(y-HAND.base)*0.01;
-  return y-HAND.base;
+  return {hits,amp};
 }
 
-function onSwing(sig,now){
-  // ★ 쉬었다고 sign을 되돌리지 않는다. 되돌리면 그 다음 젓기가 '기준 잡기'로 먹히고,
-  //   IDLE보다 느리게 저으면 모든 젓기가 먹혀 영원히 안 넘어간다(실제로 겪은 버그).
+// 한 번 저을 때마다 진행도를 올리고, PER 을 채우면 컷을 넘긴다
+function onSwing(hits,now){
   if(now-HAND.lastStep>HAND.IDLE)HAND.gaps.length=0;   // 케이던스 표시만 초기화
-  const want=HAND.sign<=0?1:-1;                 // 다음에 넘어야 할 방향
-  if(want*sig<HAND.AMP)return false;            // 아직 진폭이 모자라다
-  if(HAND.sign!==0&&now-HAND.lastTrig<HAND.GAP)return false;
-  const first=HAND.sign===0;                    // 맨 처음 한 번만 위상을 잡는다
-  HAND.sign=want; HAND.lastTrig=now;
-  if(first)return false;
-  HAND.gaps.push(now-HAND.lastStep); if(HAND.gaps.length>6)HAND.gaps.shift();
-  HAND.lastStep=now; HAND.steps++; HAND.prog++;
-  if(HAND.prog<HAND.PER)return false;           // 아직 한 컷을 채우지 못했다
-  HAND.prog=0; return true;
+  let advanced=false;
+  for(let i=0;i<hits;i++){
+    HAND.gaps.push(now-HAND.lastStep); if(HAND.gaps.length>6)HAND.gaps.shift();
+    HAND.lastStep=now; HAND.steps++; HAND.prog++;
+    if(HAND.prog>=HAND.PER){HAND.prog=0;advanced=true;}
+  }
+  return advanced;
 }
 
 // 미리보기 위에 손 랜드마크를 그린다. 잡히는지 눈으로 바로 확인하려고.
@@ -135,7 +153,11 @@ function stepOnce(){
   if(hDot)hDot.style.left=(cur/(PH.length-1)*100)+'%';   // 바는 코스 진행도
 }
 // 카메라 없이 리듬 로직만 확인할 때: HAND._test(신호값)
-HAND._test=sig=>{const hit=onSwing(sig,performance.now());if(hit)stepOnce();return hit;};
+HAND._test=(n=1)=>{const hit=onSwing(n,performance.now());if(hit)stepOnce();return hit;};
+// 카메라 없이 검출 로직만 확인한다. y 값 배열을 흘려넣어 젓기 수를 센다.
+HAND._feed=(ys,dt=42)=>{TRK.clear();let t=performance.now(),n=0;
+  for(const y of ys){t+=dt;n+=trackSwings([{x:.5,y}],t).hits;}
+  return n;};
 
 function onResults(res){
   const all=(res&&res.multiHandLandmarks)||[];
@@ -145,11 +167,12 @@ function onResults(res){
   // 펼친 손만 센다. 주먹을 쥐면 멈춘다.
   const paws=all.filter(isPaw).map(L=>({x:L[9].x,y:L[0].y}));
   DBG.paws=paws.length;
-  if(!paws.length){HAND.sign=0;return;}
-  const sig=swingSignal(paws);
-  DBG.sig=sig;
-  if(onSwing(sig,performance.now()))stepOnce();
-  gaugeUpdate(sig);
+  if(!paws.length){TRK.clear();gaugeUpdate(0);return;}   // 주먹을 쥐면 멈춘다
+  const now=performance.now();
+  const {hits,amp}=trackSwings(paws,now);
+  DBG.sig=amp;
+  if(onSwing(hits,now))stepOnce();
+  gaugeUpdate(amp);
 }
 
 async function startHand(){

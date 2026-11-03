@@ -1,0 +1,22 @@
+// 젓기 검출 자체검증. 카메라 없이 로직만 돌린다.  node hand.test.js
+const fs=require('fs');
+const src=fs.readFileSync(__dirname+'/hand.js','utf8');
+const a=src.indexOf('const TRK=new Map()');
+const b=src.indexOf('// 미리보기 위에 손 랜드마크를 그린다.');
+const HAND={AMP:0.045,GAP:140,IDLE:2500,PER:1,steps:0,prog:0,lastStep:0,gaps:[]};
+const mod=new Function('HAND', src.slice(a,b)+'\nreturn {trackSwings,onSwing,TRK};')(HAND);
+const {trackSwings,TRK}=mod;
+const wave=(n,amp,step=10,bias=0)=>{const ys=[];for(let i=0;i<n;i++)for(let k=0;k<step;k++)ys.push(0.5+bias+amp*Math.sin(2*Math.PI*(i+k/step)));return ys};
+const feed=(ys,dt=42)=>{TRK.clear();let t=1e6,n=0;for(const y of ys){t+=dt;n+=trackSwings([{x:.5,y}],t).hits}return n};
+const feed2=(L,R,dt=42)=>{TRK.clear();let t=1e6,n=0;for(let i=0;i<L.length;i++){t+=dt;n+=trackSwings([{x:.3,y:L[i]},{x:.7,y:R[i]}],t).hits}return n};
+const tr=[];for(let i=0;i<300;i++)tr.push(0.5+0.004*Math.sin(i));
+const W=wave(8,.09);
+const row=(k,v,exp)=>console.log(k.padEnd(32),String(v).padStart(3),'  ',exp);
+console.log('AMP',HAND.AMP,' / 사인 8주기 = 방향 꺾임 최대 16회\n');
+row('떨림 300프레임 (진폭 .004)',feed(tr),'기대 0');
+row('제대로 8회 젓기 (진폭 .09)',feed(W),'기대 15 안팎');
+row('작게 8회 (진폭 .02 < AMP)',feed(wave(8,.02)),'기대 0');
+row('한쪽으로 치우침 (+.2 바이어스)',feed(wave(8,.09,10,.2)),'★옛 버그면 0');
+row('양손 나란히 (같은 위상)',feed2(W,W),'★옛 버그면 0');
+row('양손 번갈아 (반대 위상)',feed2(W,W.map(y=>1-y)),'');
+row('느리게 2초 간격 6회',feed(wave(6,.09,48)),'★옛 버그면 0');

@@ -2,17 +2,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <title>은평 산 아카이브 — Paik Synthesis</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Noto+Serif+KR:wght@500;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Noto+Serif+KR:wght@500;700&family=Gasoek+One&display=swap" rel="stylesheet"/>
 <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=fb7d672e6b7e192410934cc088dcd5b7&libraries=services&autoload=false"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js"></script>
 <style>
-/* ── 팔레트: 프로젝트 자체 색에서 역할을 나눈다 ──
-   amber 현재/고도 · berry 고심박 · moss 저심박 · cyan 몸의 신호 · slate 지도/7월 */
+/* ── 팔레트 : 인쇄 1도 빨강 한 색의 변주 ──
+   ★유채색은 #cd4e37 계열 하나뿐이다(H 9°). 인쇄물 잉크값과 같은 색이라 종이와 화면이 같은 말을 한다.
+   한때 amber / berry / moss / cyan / slate 다섯에 노랑까지 일곱이었다. 그게 촌스러움의 원인이었다.
+   ★다른 색상(주황 #f0a23c, 시안 #26dcff, 초록 #7fa088)을 다시 들이지 말 것.
+     세기를 바꾸고 싶으면 아래 네 단계 안에서 고른다. */
 :root{
-  --amber:#f0a23c; --berry:#cf4b34; --moss:#7fa088; --cyan:#26dcff; --slate:#7d9bb5;
+  --red-lo:#894e43;                      /* 가라앉은 단계. 테두리, 비활성 */
+  --red:#cd4e37;                         /* 기준. print/PRINT.md 의 1도 잉크와 동일 */
+  --red-hi:#e37763;                      /* 현재 위치, 거리 (옛 amber 자리) */
+  --red-pale:#eaafa4;                    /* 제일 밝은 단계. 강조 숫자 */
   --mist:#ece9dd; --ink:#0a0f0c; --out:#8d8378;
   --mono:'JetBrains Mono',monospace; --serif:'Noto Serif KR',serif;
-  --hr:var(--amber);                     /* 심박대에 따라 paik.js가 바꾼다 */
+  --hr:var(--red-hi);                     /* 심박대에 따라 paik.js가 바꾼다 */
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#000;color:var(--mist);
@@ -32,7 +38,7 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#000;color:v
 .hud{position:absolute;inset:0;z-index:30;pointer-events:none;
   opacity:.38;transition:opacity .45s ease}
 .hud.wake{opacity:1}
-.pan{position:absolute;pointer-events:auto;--ac:var(--amber);
+.pan{position:absolute;pointer-events:auto;--ac:var(--red-hi);
   text-shadow:0 1px 3px #000,0 0 10px rgba(0,0,0,.95)}
 .pan::before{content:'';position:absolute;left:0;top:2px;bottom:2px;width:2px;background:var(--ac);opacity:.75}
 .pan{padding-left:9px}
@@ -42,7 +48,9 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#000;color:v
 .v{color:var(--mist);font-weight:500;font-variant-numeric:tabular-nums}
 
 /* 좌상단: 타이틀 + 01 위치 */
-.tl{left:18px;top:16px;--ac:var(--slate)}
+
+/* ── 좌상단: 타이틀 + 01 위치 ── */
+.tl{left:18px;top:16px;--ac:var(--out)}
 .tl h1{margin:0 0 1px;font-family:var(--serif);font-size:15px;font-weight:700;letter-spacing:-.01em;white-space:nowrap}
 .tl .cut{font-size:8.5px;letter-spacing:.16em;color:var(--out)}
 .addrv{font-family:var(--serif);font-size:15px;font-weight:700;line-height:1.3;white-space:nowrap;margin:5px 0 1px}
@@ -59,13 +67,13 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#000;color:v
   white-space:nowrap}
 #coord .row{display:block;font-size:clamp(15px,2.3vw,26px);line-height:1.25;letter-spacing:.02em;
   font-weight:500;color:var(--mist)}
-#coord .k{display:block;font-size:9.5px;letter-spacing:.34em;color:var(--slate);
+#coord .k{display:block;font-size:9.5px;letter-spacing:.34em;color:var(--out);
   font-weight:700;margin-bottom:2px;opacity:.95}
 
 /* 우상단: 날짜/시각 */
 .tr{right:18px;top:16px;text-align:right;--ac:var(--out);padding:0 9px 0 0}
 .tr::before{left:auto;right:0}
-.tr .big{font-size:15px;font-weight:700;color:var(--amber);font-variant-numeric:tabular-nums}
+.tr .big{font-size:15px;font-weight:700;color:var(--red-hi);font-variant-numeric:tabular-nums}
 .tr .sm{font-size:9px;color:var(--out);letter-spacing:.14em}
 
 /* 우하단: 02 기록 — 가로 한 줄 */
@@ -77,42 +85,43 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#000;color:v
 .st .num{font-size:21px;font-weight:700;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .st .num .u{font-size:9px;color:var(--out);margin-left:2px;font-weight:400}
 .st.hr .num{color:var(--hr)}
-.st.ele .num{color:var(--cyan)}
-.st.seq .num{font-size:12px;color:var(--amber)}
+.st.ele .num{color:var(--mist)}
+.st.seq .num{font-size:12px;color:var(--red-hi)}
 
-/* 좌하단: 03 손 추적 — 제일 작게 */
-.bl{left:18px;bottom:168px;--ac:var(--cyan)}
+/* 좌하단: 03 손 추적 */
+.bl{left:18px;bottom:176px;--ac:var(--out)}
 .hgrid{display:flex;gap:8px;align-items:flex-start}
-#hbox{position:relative;width:78px;height:58px;flex:none;background:rgba(10,15,12,.5);
-  border:1px solid rgba(38,220,255,.22)}
+/* 78x58 은 손 뼈대가 안 보일 만큼 작았다. b.html 과 같은 4:3 로 키운다 */
+#hbox{position:relative;width:168px;height:126px;flex:none;background:rgba(10,15,12,.5);
+  border:1px solid rgba(236,233,221,.20)}
 #hprev{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block;
   filter:grayscale(1) contrast(1.3) brightness(.75)}
 #hcv{position:absolute;inset:0;width:100%;height:100%}
-#hstatus{font-size:9px;line-height:1.65;color:var(--out);white-space:pre-line;max-width:190px}
-#hstatus.live{color:var(--cyan)}
-#hstatus.off{color:var(--berry)}
+#hstatus{font-size:10px;line-height:1.7;color:var(--out);white-space:pre-line;max-width:200px}
+#hstatus.live{color:var(--red-hi)}
+#hstatus.off{color:var(--red)}
 #hand.nocam #hbox{display:none}
 #gauge{display:flex;align-items:center;gap:7px;opacity:0;transition:opacity .4s;margin-top:5px}
 #gauge.show{opacity:1}
-#gmeter{position:relative;width:84px;height:4px;background:rgba(236,233,221,.13);overflow:hidden}
-#gfill{position:absolute;left:0;top:0;height:100%;width:0;background:#4a5a52;transition:width .06s linear}
-#gfill.hot{background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
+#gmeter{position:relative;width:120px;height:5px;background:rgba(236,233,221,.13);overflow:hidden}
+#gfill{position:absolute;left:0;top:0;height:100%;width:0;background:rgba(236,233,221,.30);transition:width .06s linear}
+#gfill.hot{background:var(--red-hi);box-shadow:0 0 8px var(--red-hi)}
 #gsegs{display:flex;gap:3px}
-#gsegs i{width:9px;height:4px;background:rgba(236,233,221,.15);display:block}
-#gsegs i.on{background:var(--cyan);box-shadow:0 0 6px var(--cyan)}
-#glab{font-size:8.5px;color:var(--out)}
+#gsegs i{width:11px;height:5px;background:rgba(236,233,221,.15);display:block}
+#gsegs i.on{background:var(--red-hi);box-shadow:0 0 6px var(--red-hi)}
+#glab{font-size:9.5px;color:var(--out)}
 
 /* ── 04 고도 프로파일: 풀블리드(마커 정렬 때문에 가로 패딩 금지) ── */
 .btmdim{position:absolute;left:0;right:0;bottom:0;height:175px;z-index:20;pointer-events:none;
   background:linear-gradient(180deg,transparent,rgba(0,0,0,.5) 50%,rgba(0,0,0,.85))}
 .bh{position:absolute;left:18px;bottom:122px;z-index:31;pointer-events:none;
-  font-size:8.5px;letter-spacing:.2em;color:var(--amber);opacity:.75;text-shadow:0 1px 3px #000}
+  font-size:8.5px;letter-spacing:.2em;color:var(--red-hi);opacity:.75;text-shadow:0 1px 3px #000}
 #rdg{position:absolute;left:0;bottom:22px;width:100%;height:92px;z-index:31;
   pointer-events:none;overflow:visible;display:block}
 .rmarker{position:absolute;left:0;bottom:22px;width:1px;height:92px;background:rgba(255,255,255,.85);
   z-index:32;pointer-events:none;will-change:left}
 .rmarker::after{content:'';position:absolute;top:-4px;left:-4px;width:9px;height:9px;
-  background:var(--amber);box-shadow:0 0 10px var(--amber)}
+  background:var(--red-hi);box-shadow:0 0 10px var(--red-hi)}
 .foot{position:absolute;left:0;right:0;bottom:4px;display:flex;justify-content:space-between;
   padding:0 18px;font-size:8.5px;color:var(--out);z-index:33;pointer-events:none;
   text-shadow:0 1px 3px #000}
@@ -122,23 +131,30 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#000;color:v
 .intro{position:absolute;inset:0;z-index:60;background:#000;display:flex;flex-direction:column;
   align-items:center;justify-content:center;text-align:center;padding:28px;transition:opacity 1s}
 .intro.gone{opacity:0;pointer-events:none}
-.ibg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:grayscale(1) contrast(1.3);opacity:.42}
-.idim{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent,#000 72%)}
-.intro .t{position:relative;font-family:var(--serif);font-size:clamp(30px,7vw,54px);font-weight:700;line-height:1.08;letter-spacing:-.02em}
-.intro .t em{font-style:normal;color:var(--amber)}
-.intro .s{position:relative;margin-top:14px;font-size:11px;letter-spacing:.22em;color:var(--slate)}
-.intro .m{position:relative;margin-top:8px;font-size:10px;letter-spacing:.16em;color:var(--out)}
-.go{position:relative;margin-top:26px;background:var(--amber);color:#2a1400;border:0;padding:11px 26px;
-  font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.18em;cursor:pointer;
-  box-shadow:0 0 18px rgba(240,162,60,.45)}
-.priv{position:relative;margin-top:18px;font-size:9.5px;line-height:1.9;color:#6b736b}
+.ibg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.5;z-index:0;
+  filter:grayscale(1) contrast(1.2);pointer-events:none}
+.idim{position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(115% 85% at 50% 50%,rgba(0,0,0,.3) 0%,rgba(0,0,0,.9) 100%)}
+.intro .t,.intro .s,.intro .m,.intro .go,.priv{position:relative;z-index:2}
+/* ★인트로는 A안(index.html)과 같은 화면이다. styles.css 의 .intro 규칙을 그대로 옮겼다.
+   한쪽만 고치면 또 어긋난다 — 바꿀 일이 생기면 두 파일을 같이 고칠 것 */
+.intro .t{position:relative;font-family:'Gasoek One',sans-serif;font-weight:400;
+  font-size:clamp(2.3rem,9vw,4.2rem);line-height:1.02;margin-bottom:18px}
+.intro .t em{font-style:normal;color:var(--red)}
+.intro .s{position:relative;color:#8d8378;max-width:30ch;line-height:1.7;margin-bottom:12px;font-size:.86rem}
+.intro .m{position:relative;color:#4a443d;font-size:.6rem;letter-spacing:.16em;margin-bottom:30px}
+.go{position:relative;font-size:.66rem;letter-spacing:.26em;text-transform:uppercase;
+  border:1px solid #3b3630;padding:14px 28px;color:var(--mist);background:transparent;
+  cursor:pointer;transition:.3s}
+.go:hover{border-color:var(--red);color:var(--red)}
+.priv{position:relative;margin-top:22px;font-size:9.5px;line-height:1.9;color:#6b645c}
 
 @media (max-width:900px){
   .tl{left:12px;top:12px} .tr{right:12px;top:12px}
-  .bl{left:12px;bottom:150px} .br{right:12px;bottom:150px}
   .tl h1{font-size:13px} .addrv{font-size:13px}
+  .bl{left:12px;bottom:158px} .br{right:12px;bottom:150px}
   .st .num{font-size:16px} .stats{gap:11px}
-  .mapwrap{height:58vh;top:46%} #hbox{width:62px;height:46px}
+  .mapwrap{height:58vh;top:46%} #hbox{width:120px;height:90px}
   #coord .row{font-size:15px}
   #hstatus{max-width:140px;font-size:8.5px}
   .btmdim{height:152px} .bh{bottom:108px;left:12px}
@@ -157,13 +173,14 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#000;color:v
 
   <div class="hud" id="hud">
     <!-- 좌상단: 타이틀 + 01 위치 -->
+    <!-- 우상단: 날짜 / 시각 -->
+    <!-- 좌상단: 타이틀 + 01 위치 -->
     <div class="pan tl">
       <h1>은평 산 아카이브</h1>
-      <div class="cut">CH-04 / <span id="pn">IMG</span></div>
+      <div class="cut">CH-<span id="chno">01</span> / <span id="pn">IMG</span></div>
       <div class="addrv" id="addr">—</div>
     </div>
 
-    <!-- 우상단: 날짜 / 시각 -->
     <div class="pan tr">
       <div class="sm" id="sdate">2026.10.25</div>
       <div class="big" id="stime">08:23:28</div>
@@ -193,6 +210,8 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#000;color:v
     </div>
   </div>
 
+  </div>
+
   <!-- 지도 레이어 (HUD 밖 — 흐려지지 않는다) -->
   <div class="mapwrap">
     <svg id="mmap" preserveAspectRatio="xMidYMid meet"></svg>
@@ -213,10 +232,10 @@ html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#000;color:v
   <div class="intro" id="intro">
     <video class="ibg" id="ibg" muted loop playsinline autoplay preload="auto" src="web/flyover.mp4"></video>
     <div class="idim"></div>
-    <div class="t">은평 산<br><em>아카이브</em></div>
-    <div class="s">NAM JUNE PAIK SYNTHESIS</div>
+    <div class="t">Eunpyeong<br>Mountain<br><em>Archive</em></div>
+    <div class="s">Mountain through <br> a trail runner's eyes</div>
     <div class="m">은평둘레길 / 21.25KM / 사진 147 / 영상 72</div>
-    <button class="go" id="go">기록 속으로 →</button>
+    <button class="go" id="go">Dive in →</button>
     <div class="priv">손을 펴고 바닥을 긁듯 번갈아 저으면 기록이 넘어갑니다<br>카메라 영상은 기기 안에서만 처리하고 어디에도 보내지 않습니다<br>거부해도 드래그로 볼 수 있습니다</div>
   </div>
 </div>

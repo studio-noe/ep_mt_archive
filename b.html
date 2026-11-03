@@ -16,11 +16,11 @@
   filter:grayscale(1) contrast(1.25) brightness(.8);display:block}
 #hcv{position:absolute;left:0;top:0;width:168px;height:126px;pointer-events:none}
 #htrack{position:relative;width:168px;height:3px;margin-top:6px;background:rgba(236,233,221,.16)}
-#hdot{position:absolute;top:-3px;left:0;width:9px;height:9px;border-radius:50%;background:#f0a23c;
-  box-shadow:0 0 8px #f0a23c;transform:translateX(-50%);transition:left .08s linear}
+#hdot{position:absolute;top:-3px;left:0;width:9px;height:9px;border-radius:50%;background:#e37763;
+  box-shadow:0 0 8px #e37763;transform:translateX(-50%);transition:left .08s linear}
 .hstatus{margin-top:8px;font-family:'Space Mono',monospace;font-size:.64rem;letter-spacing:.08em;color:#8a9;line-height:1.75;text-shadow:0 0 4px #000}
-.hstatus.live{color:#f0a23c}
-.hstatus.off{color:#e2705c;max-width:190px;line-height:1.6}
+.hstatus.live{color:#e37763}
+.hstatus.off{color:#cd4e37;max-width:190px;line-height:1.6}
 /* 카메라를 못 쓰면 빈 미리보기 상자는 감추고 안내만 남긴다 */
 #hand.nocam #hbox,#hand.nocam #htrack{display:none}
 /* ── 하단 게이지: 움직임 세기 + 다음 컷까지 남은 젓기 ── */
@@ -28,17 +28,17 @@
   display:flex;align-items:center;gap:10px;opacity:0;transition:opacity .5s;pointer-events:none}
 #gauge.show{opacity:1}
 #gmeter{position:relative;width:150px;height:5px;background:rgba(236,233,221,.14);overflow:hidden}
-#gfill{position:absolute;left:0;top:0;height:100%;width:0;background:#7a827a;transition:width .06s linear}
-#gfill.hot{background:#f0a23c;box-shadow:0 0 8px #f0a23c}
+#gfill{position:absolute;left:0;top:0;height:100%;width:0;background:#8d8378;transition:width .06s linear}
+#gfill.hot{background:#e37763;box-shadow:0 0 8px #e37763}
 #gsegs{display:flex;gap:4px}
 #gsegs i{width:11px;height:5px;background:rgba(236,233,221,.16);display:block}
-#gsegs i.on{background:#f0a23c;box-shadow:0 0 7px #f0a23c}
+#gsegs i.on{background:#e37763;box-shadow:0 0 7px #e37763}
 #glab{font-family:'Space Mono',monospace;font-size:.54rem;letter-spacing:.14em;color:#8a9;text-shadow:0 0 4px #000}
 /* 카메라를 쓰는 페이지라 좌표 블록은 아래로 비켜준다 */
 .coord{top:232px}
-.priv{margin-top:18px;font-family:'Space Mono',monospace;font-size:.52rem;letter-spacing:.1em;color:#6b736b;line-height:1.8}
+.priv{margin-top:18px;font-family:'Space Mono',monospace;font-size:.52rem;letter-spacing:.1em;color:#6b645c;line-height:1.8}
 .bmark{position:absolute;left:22px;bottom:132px;z-index:4;font-family:'Space Mono',monospace;font-size:.52rem;
-  letter-spacing:.2em;color:#565e56;pointer-events:none}
+  letter-spacing:.2em;color:#5d564e;pointer-events:none}
 </style>
 </head><body>
 <div id="stage">
@@ -65,7 +65,7 @@
     <div class="idim"></div>
     <div class="t">Eunpyeong<br>Mountain<br><span class="c">Archive</span></div>
     <div class="s">Paddle with your hands <br> as if they were feet</div>
-    <div class="m">은평둘레길 / 21.25KM / 사진 91 / 영상 47</div>
+    <div class="m">은평둘레길 / 21.25KM / 사진 147 / 영상 72</div>
     <button class="go" id="go">Dive in →</button>
     <div class="priv">카메라로 손 움직임만 읽습니다<br>영상은 기기 안에서 처리하고 어디에도 보내지 않습니다<br>거부해도 드래그로 볼 수 있습니다</div>
   </div>
