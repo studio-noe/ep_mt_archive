@@ -261,12 +261,15 @@ function frame(){requestAnimationFrame(frame);if(!started||!W||!H)return;  // �
   compX.globalCompositeOperation='lighter';
   // 행마다 밀림과 분리량이 달라서 띠 단위로 그린다.
   //  r 은 +diff, g 는 0, b 는 -diff — ★대칭이다(누진 0.2/0.4/0.6 은 다른 셰이더 얘기였다).
+  // ★소스 좌표는 논리 px 다. rC/gC/bC 는 mkC() 가 W×H(논리)로 만든다 — DPR 을 곱하면
+  //   DPR 2 화면에서 소스 사각형이 두 배라 내용이 **좌상단 1/4 로** 쭈그러든다(2026-11-04).
+  //   아래 `ctx.drawImage(cv,...*DPR...)` 는 다르다 — 거긴 화면 캔버스라 실제로 DPR 크기다.
   const BAND=6;
   for(let y=0;y<H;y+=BAND){
-    const wv=rgbWave(y,T,st), df=rgbDiff(y,T,st), sy=y*DPR, sh=Math.min(BAND,H-y)*DPR, dh=sh/DPR;
-    compX.drawImage(rC,0,sy,W*DPR,sh,wv+df,y,W,dh);
-    compX.drawImage(gC,0,sy,W*DPR,sh,wv,   y,W,dh);
-    compX.drawImage(bC,0,sy,W*DPR,sh,wv-df,y,W,dh);
+    const wv=rgbWave(y,T,st), df=rgbDiff(y,T,st), dh=Math.min(BAND,H-y);
+    compX.drawImage(rC,0,y,W,dh,wv+df,y,W,dh);
+    compX.drawImage(gC,0,y,W,dh,wv,   y,W,dh);
+    compX.drawImage(bC,0,y,W,dh,wv-df,y,W,dh);
   }
   // 블록 노이즈. ★검정이 아니라 **크게 어긋나게 샘플한 사진**이다(셰이더의 bnUvX = x + sin(bnTime)*0.2).
   //  검은 사각형으로 만들면 화면이 구멍투성이가 된다. 한 번 그렇게 깨뜨렸다.
@@ -274,12 +277,12 @@ function frame(){requestAnimationFrame(frame);if(!started||!W||!H)return;  // �
   for(let y=0;y<H;y+=BAND){
     const mx=(sn(0.3+T*0.7)+1)/2<0.12+st*0.3, my=(sn(y*0.006+bnT*0.001)+1)/2<0.12+st*0.3;
     if(!(mx&&my))continue;
-    const wv=rgbWave(y,T,st)+jump, df=rgbDiff(y,T,st), sy=y*DPR, sh=Math.min(BAND,H-y)*DPR, dh=sh/DPR;
+    const wv=rgbWave(y,T,st)+jump, df=rgbDiff(y,T,st), dh=Math.min(BAND,H-y);
     compX.globalCompositeOperation='source-over';compX.clearRect(0,y,W,dh);
     compX.globalCompositeOperation='lighter';
-    compX.drawImage(rC,0,sy,W*DPR,sh,wv+df,y,W,dh);
-    compX.drawImage(gC,0,sy,W*DPR,sh,wv,   y,W,dh);
-    compX.drawImage(bC,0,sy,W*DPR,sh,wv-df,y,W,dh);
+    compX.drawImage(rC,0,y,W,dh,wv+df,y,W,dh);
+    compX.drawImage(gC,0,y,W,dh,wv,   y,W,dh);
+    compX.drawImage(bC,0,y,W,dh,wv-df,y,W,dh);
   }
   compX.globalCompositeOperation='source-over';
   // shake — 셰이더의 vec2(strength*8+0.5) 무작위 오프셋

@@ -26,9 +26,18 @@ const hStatus=document.getElementById('hstatus'),hPrev=document.getElementById('
       hDot=document.getElementById('hdot'),hWrap=document.getElementById('hand'),
       hcv=document.getElementById('hcv'),hcx=hcv?hcv.getContext('2d'):null;
 
+// ★진단 5줄은 개발용이다. QR로 들어온 관람자 화면에 추론 fps·흔들림 수치가 뜨면
+//   의미 없는 글자가 03 자리를 다 먹는다. b.html(샘플 페이지)과 `?debug` 에서만 켠다.
+const DBGON=/[?&]debug\b/.test(location.search)||/\/b\.html$/.test(location.pathname);
 function hRender(){
   if(!hStatus)return;
   hStatus.className='hstatus'+(DBG.err?' off':(DBG.seen?' live':''));
+  if(!DBGON){                      // 관람자용 한 줄. 나머지는 게이지가 말한다
+    hStatus.textContent=DBG.err?'카메라 없음 / 드래그로 넘기세요'
+      :DBG.cam!=='켜짐'?'카메라 준비 중'
+      :'손을 펴고 저으세요';
+    return;
+  }
   const g=HAND.gaps,spm=g.length?Math.round(60000/(g.reduce((a,b)=>a+b,0)/g.length)):0;
   const fresh=performance.now()-HAND.lastStep<HAND.IDLE;
   hStatus.innerHTML=
