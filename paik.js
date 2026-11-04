@@ -153,7 +153,9 @@ void main(){
   // 절반 해상도로 그린다. CSS가 늘려주고, 거친 래스터가 오히려 CRT에 맞는다.
   function size(){
     // ★innerWidth 는 iOS 에서 핀치줌 배율을 탄다(app.js resize 주석 참고). 레이아웃 박스를 쓴다.
-    const r=cvs.getBoundingClientRect();
+    // ★cvs 자신이 아니라 부모(#stage) 를 잰다 — canvas 는 대체요소라 CSS 가 없으면
+    //   자기 width 속성이 레이아웃 폭이 되어 rect→width→rect 로 되먹임이 돈다.
+    const r=(cvs.parentElement||cvs).getBoundingClientRect();
     const w=Math.max(2,Math.round((r.width||innerWidth)/2)),h=Math.max(2,Math.round((r.height||innerHeight)/2));
     if(cvs.width!==w||cvs.height!==h){cvs.width=w;cvs.height=h;}
   }

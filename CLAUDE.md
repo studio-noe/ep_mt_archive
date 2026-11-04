@@ -440,7 +440,11 @@ NOE가 준 Stitch 목업을 참고해 **껍데기만 다시 짠 세 번째 화�
 - 원인: **iOS 사파리의 `innerWidth`/`innerHeight` 는 레이아웃 폭이 아니라 핀치줌이 걸린 보이는 영역을 돌려준다.** 확대한 상태에서 resize 가 한 번 걸리면 `W` 가 절반으로 박히고, 옛 코드가 그 값을 `cv.style.width` 에 인라인으로 써버려 캔버스 자체가 작아진 채 굳었다. `#fx`(CRT)는 CSS가 `width:100%` 라 혼자 멀쩡해서 "주사선은 꽉 찼는데 사진만 작다"로 보였다
 - 고침: `resize()` 가 **`#stage` 의 `getBoundingClientRect()`** 를 잰다. 인라인 px 는 안 쓰고, `ResizeObserver(stage)` 로 주소창 접힘·회전까지 따라간다. `W` 하나만 고치면 능선 마커·드래그 좌표가 전부 따라 맞는다
 - ★★**캔버스 자신을 재면 안 된다.** `canvas` 는 대체요소라 `width:auto` 면 `inset:0` 이 늘려주는 게 아니라 **자기 `width` 속성이 그대로 레이아웃 폭**이 된다. rect → W → cv.width → rect 로 되먹임이 돌아 프레임마다 두 배씩 커진다(실제로 3355만 px 까지 치솟는 걸 봤다). `#stage` 는 평범한 div 라 그 고리가 없다
-- 그래서 `#cv` 에 `width:100%;height:100%` 를 **CSS로 못박았다** (`c.html` / `styles.css` 양쪽). 인라인 px 를 없앤 자리를 CSS가 메운다
+- 그래서 `#cv` 에 `width:100%;height:100%` 를 CSS로도 못박았다 (`c.html` / `styles.css` 양쪽)
+- ★★**CSS에만 맡기면 안 된다 (같은 날 재발).** 인라인 px 를 아예 빼버렸더니, 브라우저가 `app.js` 만 새로 받고 `styles.css` 는 캐시에서 꺼내는 순간 `#cv{width:100%}` 가 없는 상태가 된다. 그러면 위의 대체요소 성질 때문에 캔버스 레이아웃 폭이 **자기 `width` 속성 = `W*DPR`**, 즉 두 배가 되고 `overflow:hidden` 에 잘려 **좌상단 1/4 만** 보인다(NOE 제보, 실측 가로 54% 세로 52%)
+  - 고침: `resize()` 에서 **`cv.style.width/height` 를 다시 박는다.** 단 값은 `innerWidth` 가 아니라 `#stage` 를 잰 `W`/`H`. 자신을 재는 게 아니라 되먹임 고리는 없다
+  - `paik.js` 의 `#fx` 도 자기 rect 대신 부모를 잰다. 같은 되먹임을 막는다
+  - 검증: `#cv` 규칙을 런타임에 삭제해도 rect 375×812 그대로 / `GLITCH_CHECK()` 오차 0
 - 검증: 375×812 / 768×1024, `innerWidth` 를 52% 로 거짓말시켜도 W 그대로 / 리로드 없이 뷰포트만 바꿔도 재동기화 / 마커 129.9px = 기대값 / `GLITCH_CHECK()` 오차 0 / index·b·c 세 페이지 모두 통과
 
 ### ★뒤집힌 원본 (2026-11-03)

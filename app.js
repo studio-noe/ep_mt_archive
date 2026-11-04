@@ -80,7 +80,14 @@ function boxOf(){const r=(stage||cv).getBoundingClientRect();
   return [Math.round(r.width)||innerWidth,Math.round(r.height)||innerHeight];}
 function resize(){DPR=Math.min(2,devicePixelRatio||1);
   [W,H]=boxOf();
-  cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);
+  cv.width=W*DPR;cv.height=H*DPR;
+  // ★레이아웃 크기는 여기서 못박는다. CSS(#cv{width:100%}) 에만 맡기면, 브라우저가
+  //   app.js 만 새로 받고 styles.css 는 캐시에서 꺼낼 때 canvas 가 대체요소라
+  //   **자기 width 속성(=W*DPR)이 레이아웃 폭이 되어** 두 배로 커지고, overflow:hidden 에 잘려
+  //   화면엔 좌상단 1/4 만 보인다(NOE 신고 2026-11-04, 실측 가로 54% 세로 52%).
+  //   stage 박스를 잰 값이라 cv 자신을 재는 되먹임 고리는 없다.
+  cv.style.width=W+'px';cv.style.height=H+'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);
   [baseC,baseX]=mkC();[rC,rCx]=mkC();[gC,gCx]=mkC();[bC,bCx]=mkC();[compC,compX]=mkC();if(cur>=0)applySource();}
 addEventListener('resize',resize);
 // resize 이벤트만으로는 iOS 주소창 접힘·회전을 놓친다. 박스가 실제로 변했을 때만 다시 잡는다.
