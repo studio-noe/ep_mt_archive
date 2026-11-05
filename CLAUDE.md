@@ -52,10 +52,10 @@
 
 ```
 ep_mt_archive/
-├── index.html          # A안(기본): 폰트/카카오 SDK 로드, 인트로 DOM, canvas/HUD/능선 DOM, app.js 로드
+├── index.html          # ★메인 = C안(백남준 CRT). 자체 CSS, app.js→hand.js→paik.js
 ├── b.html              # B안: 개헤엄 제스처. 기존 HUD 그대로 + 카메라 UI. app.js→hand.js
 ├── hand.js             # 제스처 공통. MediaPipe Hands로 젓기 검출 → 다음 컷
-├── c.html              # C안: 백남준 CRT 디자인. 자체 CSS, app.js→hand.js→paik.js
+├── c.html              # A안(옛 기본): 폰트/카카오 SDK 로드, 인트로 DOM, canvas/HUD/능선 DOM, app.js 로드
 ├── paik.js             # C안 전용. WebGL CRT 오버레이 + HUD 숫자 포맷
 ├── app.js              # 앱 전체 (86.7KB) = 상단 데이터 blob + 글리치 엔진 코드
 ├── styles.css          # 스타일 전부
@@ -66,6 +66,10 @@ ep_mt_archive/
 ├── CLAUDE.md           # (이 파일) 종합 인수인계
 └── 은둘길_글리치_v2.html  # 옛 단일파일 버전(참고용, 미사용)
 ```
+
+★**2026-11-05에 `index.html` 과 `c.html` 을 맞바꿨다.** 메인(`/`)이 C안(백남준 CRT)이고, 옛 A안은 `c.html` 로 밀렸다.
+파일만 바꿔치웠고 내용은 그대로다. 그래서 **이 문서 아래쪽에서 `c.html` 이라 적힌 CRT·백남준·지도 얘기는 전부 지금의 `index.html`** 이고,
+`index.html` 이라 적힌 A안 얘기는 지금의 `c.html` 이다. 손 추적 진단 패널도 메인에선 꺼지므로 디버깅은 `/?debug` 로 연다.
 
 `app.js` 상단: `const D={photos:[...219], prof:[[km,ele]×464], total:21.25}` → `const PH=D.photos.slice().sort(by km)`. 데이터는 코드에 인라인.
 
@@ -335,7 +339,7 @@ NOE가 **카메라로 관람자 움직임을 추적**해 인터랙션에 넣고 
 
 ---
 
-## 8-2. C안 — 백남준 CRT 디자인 (`c.html` + `paik.js`)
+## 8-2. C안 — 백남준 CRT 디자인 (지금의 `index.html` + `paik.js`)
 
 NOE가 준 Stitch 목업을 참고해 **껍데기만 다시 짠 세 번째 화면.** `index.html`·`b.html`은 그대로 둔다.
 - **app.js를 손대지 않고 재사용.** app.js가 요구하는 id를 그대로 유지하면 엔진·데이터·능선·미니맵이 전부 따라온다

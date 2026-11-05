@@ -28,6 +28,7 @@ const hStatus=document.getElementById('hstatus'),hPrev=document.getElementById('
 
 // ★진단 5줄은 개발용이다. QR로 들어온 관람자 화면에 추론 fps·흔들림 수치가 뜨면
 //   의미 없는 글자가 03 자리를 다 먹는다. b.html(샘플 페이지)과 `?debug` 에서만 켠다.
+//   메인(index.html)에서 손 추적을 디버깅할 땐 `/?debug` 로 열 것.
 const DBGON=/[?&]debug\b/.test(location.search)||/\/b\.html$/.test(location.pathname);
 function hRender(){
   if(!hStatus)return;
