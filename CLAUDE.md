@@ -13,7 +13,9 @@
 
 - 로컬 저장소를 **직접 편집** (`/Users/noe/IdeaProjects/ep_mt_archive`).
 - **JS 수정 후 반드시 문법 검증**: `node -e "new Function(require('fs').readFileSync('app.js','utf8'))"`. (과거 replace 실수로 스크립트가 통째로 깨진 적 있음 — 꼭 검증.)
-- **`git push`는 사용자(NOE)가 직접** 실행. 커밋 메시지 제안은 해도 됨.
+- **커밋은 푸시와 세트다.** "커밋해" 라고 하면 푸시까지 한다. 단 **말하기 전엔 둘 다 안 한다.**
+  개인 저장소라 푸시 전에 `git config user.name "SOYEON LIM"` / `user.email "iamsoyeon316@gmail.com"` 를 맞추고
+  `git -c credential.helper= -c credential.helper='!gh auth git-credential' push` 로 올린다(키체인이 회사 계정이라).
 - 로컬 확인은 `python3 -m http.server 8000` → `http://localhost:8000/`. **`file://` 금지**(canvas taint + 영상 자동재생 막힘).
 - 미디어 원본(5MB×84)은 무겁다 — 코드/데이터만 다루고, 변환·배포는 사용자가.
 - 별도로 `HANDOFF.md`(노트북↔폰 오갈 때 쓰는 짧은 워크플로 노트)가 있음. 이 CLAUDE.md는 종합 맥락, HANDOFF.md는 세션 간 단기 메모.
@@ -442,7 +444,7 @@ NOE가 준 Stitch 목업을 참고해 **껍데기만 다시 짠 세 번째 화�
 - **매칭은 시간만으로 하지 말 것** — 촬영 중 시계가 멈춘 컷 32개. 시각 ±300초 창 안에서 사진 GPS와 공간 최근접
 - **JS 수정 후 문법 검증** 필수 (`new Function`)
 - **`file://` 금지** → 반드시 `http.server`
-- **git push는 사용자 몫**
+- **커밋해 = 푸시까지** (말하기 전엔 둘 다 안 한다). 개인 계정으로 config 맞추고 gh 자격증명으로 push
 - 카카오 JS 키 노출 → 도메인 제한이 방어막
 - 미디어 원본 무거움(1.4GB) → 컨텍스트로 끌어오지 말 것
 - 데이터(D blob)는 코드 인라인 — `const D=` ~ `const PH=` 경계 조심
