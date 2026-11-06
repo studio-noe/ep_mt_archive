@@ -167,8 +167,30 @@ if(mmap){
   // ★7월 선을 같이 그린다. 7월 컷은 그날 실제로 지나간 자리라 10월 트랙에서
   //   최대 220m 떨어진다. 10월 선만 그리면 그 점들이 선 밖에 떠 보인다(NOE 지적).
   //   좌표를 선에 맞춰 옮기는 건 안 된다 — 이 기록의 전제가 "옮긴 수치는 없다" 이다.
-  const line=(d,o,w)=>'<path d="'+d+'" fill="none" stroke="#ece9dd" stroke-width="'+w+'" opacity="'+o+'" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/>';
+  const line=(d,o,w,dash)=>'<path d="'+d+'" fill="none" stroke="#ece9dd" stroke-width="'+w+'" opacity="'+o+'" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"'+(dash?' stroke-dasharray="'+dash+'"':'')+'/>';
+  // ★끊긴 자리는 점선으로 잇는다(2026-11-05).
+  //   10월 트랙 index 6600, 불광천 구간에서 435초 동안 GPS 를 놓쳤다 — 주행거리는 0m 인데
+  //   좌표가 452m 뛴다. 실선으로 이으면 없는 경로를 지어내는 것이고(이 기록의 전제가
+  //   "지어낸 수치는 없다"), 그냥 끊어두면 지도에 구멍이 뚫려 보인다(NOE 지적 "또 끊어짐").
+  //   점선이 둘 다 피한다 — 선은 이어지되 기록이 없다는 걸 눈이 안다.
+  //   ★프레임 밖으로 나갔다 들어오는 끊김은 잇지 않는다. 이으면 화면을 가로지르는
+  //    가짜 직선이 된다(7월 선의 두 곳이 그렇다). y<0 과 GAPMAX 가 그걸 거른다.
+  const GAPMAX=200;                       // 1단위 ≈ 3.8m. 760m 넘게 벌어진 건 기록 공백이 아니라 프레임 이탈이다
+  const gapLine=d=>{
+    const seg=d.split('M').filter(t=>t.trim())
+      .map(t=>t.trim().split('L').filter(Boolean).map(q=>q.split(',').map(Number)));
+    let out='';
+    for(let i=1;i<seg.length;i++){
+      const a=seg[i-1][seg[i-1].length-1],b=seg[i][0];
+      if(a[1]<0||b[1]<0)continue;
+      if(Math.hypot(b[0]-a[0],b[1]-a[1])>GAPMAX)continue;
+      out+='M'+a[0]+','+a[1]+'L'+b[0]+','+b[1];
+    }
+    return out;
+  };
+  const gaps=gapLine(D.map.p)+(D.map.j?gapLine(D.map.j):'');
   mmap.innerHTML=(D.map.j?line(D.map.j,0.26,0.9):'')+line(D.map.p,0.6,1.3)
+    +(gaps?line(gaps,0.55,1.3,'9 9'):'')
     +'<circle id="mglow" r="62" fill="#e37763" opacity="0.22"/><circle id="mdot" r="30" fill="#e37763"/>';
 }
 const mdot=document.getElementById('mdot');
