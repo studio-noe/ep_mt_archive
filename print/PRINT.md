@@ -172,8 +172,8 @@ python3 -I print/mkbasemap.py 15 topo 0.42      # 현재 값
 > A TRAIL
 > RUNNER’S EYES
 >
-> 산을
-> 달리며 바라본
+> 산을 달리며
+> 바라본
 > 은평의____ 산
 >
 > 2026.10.25 / 은둘길 21.25 km
