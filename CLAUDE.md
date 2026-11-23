@@ -217,7 +217,10 @@ ep_mt_archive/
 - 큰 좌표(실제 GPS, Space Mono, 글리치 text-shadow) + 주소(구·동) + km/HR/고도/타입 + 파일명
 - **역지오코딩 = 카카오** `coord2regioncode(lng,lat)` → region_type 'H'의 `region_2depth+region_3depth`. ★(경도,위도) 순서. 300ms 디바운스+캐시. (Nominatim은 한국 동 부정확 → 교체. "향동을 은평구로" 오표기가 이유)
 - **카카오 JS 키가 index.html에 박혀 public repo 노출** → 방어막은 도메인 제한
-- ★**저장소가 `studio-noe`로 이전되면서 배포 도메인이 바뀌었다.** 카카오 Web 플랫폼에 **`https://studio-noe.github.io`를 등록해야** 주소가 뜬다. 등록 전에는 SDK 스크립트 자체가 `onerror`로 막히고 `kakao` 객체가 undefined라 주소가 `—`로 남는다(2026-10-28 확인). `http://localhost:8000`도 같이 등록되어 있어야 로컬에서 보인다
+- ★**카카오 도메인 등록은 2026-11-10에 끝났다.** `https://studio-noe.github.io` / `http://localhost:8000` 둘 다 등록돼 있고 배포본에서 주소가 컷마다 뜬다(진관동 / 구산동 / 수색동 / 응암2동 / 불광1동 확인)
+  - 증상 기억해 둘 것 : 등록이 빠지면 SDK 스크립트가 `onerror`로 막히고 `kakao` 객체가 undefined라 주소가 `—`로 남는다. `curl -H "Referer: <도메인>" <SDK URL>` 로 바로 판별된다. 401 `domain mismatched!` 면 등록 문제고, 200 이면 코드 문제다
+  - ★**콘솔 메뉴 위치가 바뀌었다.** 옛 "플랫폼" 메뉴는 없다. 지금은 **앱 > 플랫폼 키 > JavaScript 키 (수정) > JavaScript SDK 도메인** 이다
+  - 등록 목록에 `https://noe316.github.com` 이 남아 있다 — **`.com` 오타**라 아무 데도 안 맞는다. 지울지 미정
 
 ### 폰트 / 팔레트 / 타이틀
 - Gasoek One(타이틀) · Space Mono(데이터/좌표) · Gowun Batang(주소). Archivo Black/Hahmlet/Signika도 로드(미사용)

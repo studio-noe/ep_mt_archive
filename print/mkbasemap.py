@@ -1,7 +1,10 @@
 # p6-7 지도 바탕. OSM 타일을 받아 붙이고, 지면 좌표계(= app.js mapXY)에 맞춰 늘린 뒤
 # 1도 빨강 톤으로 묽게 깔아준다. 트랙·경계선은 boundary.svg가 위에 얹힌다.
 #
-#   python3 -I print/mkbasemap.py [zoom]
+#   python3 -I print/mkbasemap.py [zoom] [osm|topo] [세기]
+#   기본값 16 topo 0.50 = 실제 입고에 쓴 값.
+#   ★zoom 을 내리면 선이 굵어져 진해지고, 올리면 가늘어져 묽어진다.
+#     z15 에서는 K 0.26 이 z16 의 K 0.50 과 같은 농도였다. 둘을 같이 움직일 것.
 #
 # ★출처 표기 의무 : "지도 © OpenStreetMap contributors" 를 p8에 반드시 넣는다 (ODbL).
 # ★타일은 캐시된다. 두 번째부터는 네트워크를 안 탄다.
@@ -17,11 +20,11 @@ SRC = {
   'topo': ('https://a.tile.opentopomap.org/{z}/{x}/{y}.png',
            '지도 © OpenTopoMap (CC-BY-SA) / 데이터 © OpenStreetMap contributors, SRTM', False),
 }
-NAME = sys.argv[2] if len(sys.argv) > 2 else 'osm'
+NAME = sys.argv[2] if len(sys.argv) > 2 else 'topo'
 URL, CREDIT, _ = SRC[NAME]
-Z = int(sys.argv[1]) if len(sys.argv) > 1 else 15
+Z = int(sys.argv[1]) if len(sys.argv) > 1 else 16
 # 바탕 세기. 1.0 = 원본 명암 그대로, 0.2 = 아주 묽게
-K = float(sys.argv[3]) if len(sys.argv) > 3 else 0.26
+K = float(sys.argv[3]) if len(sys.argv) > 3 else 0.50
 
 B = json.load(open(OUT + 'boundary.json'))
 minLat, maxLat, minLon, kx, s = B['k']
