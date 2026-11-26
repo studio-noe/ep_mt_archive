@@ -62,7 +62,7 @@ VB=(-40,-40,1080,1661)
 MM_H=120.0; MM_W=MM_H*VB[2]/VB[3]
 g=[f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{VB[0]} {VB[1]} {VB[2]} {VB[3]}" width="{MM_W:.1f}mm" height="{MM_H:.1f}mm">',
    f'<!-- 은둘길 21.25km + 행정경계. 투영 = app.js mapXY (등거리원통, D.map.k). 1도 빨강 {INK} -->',
-   f'<rect x="{VB[0]}" y="{VB[1]}" width="{VB[2]}" height="{VB[3]}" fill="#F3F3F3" id="paper"/>',
+   f'<rect x="{VB[0]}" y="{VB[1]}" width="{VB[2]}" height="{VB[3]}" fill="#FFFFFF" id="paper"/>',
    f'<g id="dong" opacity=".34"><path d="{dstr(dong)}" fill="none" stroke="{INK}" stroke-width="1.6" stroke-dasharray="2 4"/></g>',
    f'<g id="gu"><path d="{dstr(gu)}" fill="none" stroke="{INK}" stroke-opacity=".62" stroke-width="3" stroke-dasharray="11 6"/></g>',
    f'<g id="track"><path d="{trd}" fill="none" stroke="{INK}" stroke-width="4.2" stroke-linejoin="round" stroke-linecap="round"/></g>',

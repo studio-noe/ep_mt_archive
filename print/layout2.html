@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>인쇄 구성안 : 지면 시안 (파랑 1도)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- ★한 집안(Gothic A1)으로 묶는다. 크기와 굵기 대비만으로 말한다.
+     옛 조합(Gasoek One + Gowun Batang + Space Mono)은 목소리가 셋이라 따로 놀았고,
+     고운바탕은 획이 가늘어 1비트 디더에서 끊긴다. 디스플레이는 Archivo Black(라틴). -->
+<link href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@300;400;500;700;800;900&family=Archivo+Black&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1F3B83;        /* 코발트 쪽 C100 M88 Y0 K0. 아래 #sw 토글이 갈아끼운다 */
+  --paper:#FFFFFF;
+  --z:.45;              /* 화면 배율. JS가 뷰포트에 맞춰 다시 잡는다 */
+  --mg:15mm;            /* 좌우 여백 */
+  --mt:14mm;            /* 위 여백 */
+  --mb:12mm;            /* 아래 여백 */
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#2a2622;color:#ddd;font:13px/1.5 "IBM Plex Mono",monospace;padding:70px 24px 80px}
+
+/* ── 조작부 (인쇄 안 됨) ── */
+#bar{position:fixed;top:0;left:0;right:0;z-index:9;display:flex;gap:18px;align-items:center;
+     padding:10px 20px;background:#18151380;backdrop-filter:blur(8px);border-bottom:1px solid #3a3530;font-size:12px}
+#bar b{color:var(--ink);font-weight:400}
+#bar label{display:flex;gap:6px;align-items:center;cursor:pointer;color:#bbb}
+#bar input[type=range]{width:150px}
+
+/* ── 지면 ── */
+.sheet{position:relative;background:var(--paper);color:#1a1a1a;height:148mm;width:210mm;
+       zoom:var(--z);margin:0 auto 26px;overflow:hidden;box-shadow:0 0 0 1px #0006,0 18px 40px #0007;
+       font-family:"Gothic A1",sans-serif;font-weight:400}
+.spread{width:420mm}
+.cap{max-width:1100px;margin:0 auto 8px;color:#8d8578;font-size:12px;letter-spacing:.04em}
+.cap i{color:#c9a; font-style:normal}
+
+/* 판면 가이드 */
+.guide{position:absolute;inset:var(--mt) var(--mg) var(--mb);outline:1px dashed var(--ink);pointer-events:none;display:none}
+.fold{position:absolute;top:0;bottom:0;left:50%;width:0;border-left:1px dashed var(--ink);display:none}
+.fold::after{content:"거터";position:absolute;top:2mm;left:1mm;font:400 2.6mm "IBM Plex Mono";color:var(--ink)}
+body.g .guide,body.g .fold{display:block}
+
+/* 글 */
+h1{font-family:"Gothic A1",sans-serif;font-weight:900;color:var(--ink);line-height:1.04;letter-spacing:-.03em}
+/* ── 타이포 스케일 : 두 단계뿐이다 ──
+   거대한 디스플레이와 아주 작은 본문. ★중간 크기를 만들지 말 것 —
+   참고한 benvenusa / developments.media 의 힘은 그 '사이'가 없다는 데서 나온다. */
+.disp{font-family:"Archivo Black",sans-serif;color:var(--ink);
+  line-height:.82;letter-spacing:-.035em;text-transform:uppercase;white-space:nowrap}
+.disp.fit{display:block;white-space:nowrap}
+/* ★한글 디스플레이는 반드시 이 클래스. Archivo Black 에는 한글이 없어서
+   .disp 만 쓰면 기본 산세리프로 떨어지고 굵기가 400 으로 보인다. */
+.disp.kr{font-family:"Gothic A1",sans-serif;font-weight:900;letter-spacing:-.035em}  /* 판면 끝에서 끝까지 — 크기는 fitDisp() 가 맞춘다 */
+/* ── 계단식 제목 ──
+   한 줄씩 들여쓰며 내려간다. 영문 세 줄을 한글 세 줄이 같은 간격으로 받는다. */
+.cascade .cl{font-family:"Archivo Black",sans-serif;font-size:11mm;line-height:1.1;
+  color:var(--paper);letter-spacing:-.02em;white-space:nowrap;
+  margin-left:calc(var(--i) * 13mm)}
+.cascade .cl.kr{font-family:"Gothic A1",sans-serif;font-weight:900;letter-spacing:-.03em}
+/* 한글은 영문 뒤로 물러난다. 같은 말을 두 번 하는 자리라 소리를 낮춘다.
+   ★시작점은 THROUGH(영문 둘째 줄)와 같은 자리다 = 한 칸(13mm) */
+.cascade .cl.kr{font-size:9mm;opacity:.42;
+  margin-left:calc(var(--i) * 13mm + 13mm)}
+/* 빈칸 자리의 괘선. ★가운데가 아니라 글자 바닥(베이스라인)에 붙인다 */
+.cascade .rule{display:inline-block;width:34mm;height:1.1mm;background:currentColor;
+  margin:0 3mm;vertical-align:baseline}
+.cascade .cl.kr:first-of-type{margin-top:6mm}
+.hd{font-family:"Archivo Black",sans-serif;font-size:4mm;color:var(--ink);
+  letter-spacing:.02em;text-transform:uppercase}
+/* 딱딱한 면 띠. 그라데이션도 둥근 모서리도 없다 */
+.band{background:var(--ink);color:var(--paper)}
+.band .num,.band .spec{color:var(--paper)}
+.body{font-size:2.9mm;line-height:1.8;text-align:justify;word-break:keep-all;font-weight:400}
+.body p+p{margin-top:1.4mm;text-indent:2.9mm}
+.two{column-count:2;column-gap:8mm}
+.num{font-family:"IBM Plex Mono",monospace;font-size:2.2mm;letter-spacing:.04em;color:#6b6b6b}
+.folio{position:absolute;bottom:6mm;font:500 2.4mm "IBM Plex Mono";color:#9a9a9a}
+/* ── 하단 러닝 푸터 ──
+   큰 쪽번호 + 굵은 섹션명, 한쪽은 반전 블록으로 잡아준다.
+   ★모든 지면에서 같은 자리, 같은 높이여야 책으로 읽힌다. */
+.foot{position:absolute;left:0;right:0;bottom:0;height:13mm;display:flex;align-items:stretch;z-index:4}
+.foot .pg{font-family:"Archivo Black",sans-serif;font-size:7.5mm;line-height:13mm;padding:0 4mm 0 12mm;color:var(--ink)}
+.foot .ttl{font-family:"Archivo Black",sans-serif;font-size:4mm;line-height:13mm;letter-spacing:.06em;color:var(--ink);text-transform:uppercase}
+.foot .ttl.kr{font-family:"Gothic A1",sans-serif;font-weight:900;letter-spacing:-.01em;text-transform:none}
+.foot .fill{flex:1}
+.foot .inv{background:var(--ink);display:flex;align-items:center;gap:5mm;padding:0 12mm 0 7mm}
+.foot .inv .ttl,.foot .inv .pg{color:var(--paper);padding-left:0}
+.foot.on-ink .pg,.foot.on-ink .ttl{color:var(--paper)}
+/* 흰 바탕 위의 푸터 : 반전 블록 없이 빨강 글자로 */
+.foot.on-paper .pg,.foot.on-paper .ttl{color:var(--ink)}
+
+/* 능선 띠 */
+/* ★능선 박스를 본문 밑에 바짝 붙이지 말 것 — 40mm/bottom:19mm 이던 때 그려진 능선 꼭짓점이
+   본문 바닥보다 2.3mm 위로 올라와 글자에 닿았다(2026-11-04). 박스를 내리고 조금 낮췄다.
+   ★바닥(bottom:19mm)은 건드리지 말 것 — 박스 바닥이 곧 면의 바닥이라 1mm만 내려도 거리축을 먹는다.
+   간격은 높이(40 → 36mm)로 번다. 수직 과장이 9.4 → 8.5배가 된다. */
+.ridge{position:absolute;left:0;right:0;bottom:19mm;height:36mm}
+.ridge svg{display:block;width:100%;height:100%}
+.axis{position:absolute;left:0;right:0;bottom:15.5mm;height:3mm;font:400 2.2mm "IBM Plex Mono";color:#8a8a8a}
+.axis span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.axis span:first-child{transform:none}
+.axis span:last-child{transform:translateX(-100%)}
+.silo{position:absolute;left:0;right:0;bottom:0;height:26mm;z-index:2}
+/* ── 비치는 지도 ── */
+/* 지도는 ★오른쪽 면에만 살짝 비친다. 왼쪽(제목 면)은 건드리지 않는다.
+   확대하지 않는다 — 고리 전체가 보여야 '이 길을 돈 기록'으로 읽힌다. */
+.peek{position:absolute;left:210mm;right:0;top:0;bottom:30mm;overflow:hidden;z-index:1;
+  pointer-events:none;opacity:.42;mix-blend-mode:multiply;
+  -webkit-mask-image:linear-gradient(to right,transparent 0,#000 100%);
+          mask-image:linear-gradient(to right,transparent 0,#000 100%)}
+/* ★지도는 세로 비율(0.65)이라 img 로는 펼침 가로를 못 채운다.
+   두 겹을 같은 cover/position 으로 깔아야 바탕과 트랙이 서로 어긋나지 않는다. */
+/* ★이미지의 오른쪽 끝이 지면 안에서 끝나면 그게 경계선으로 보인다.
+   재단선 밖으로 흘려보내야 한다(background-position 을 100% 너머로). */
+.peek i{position:absolute;inset:0;display:block;background-repeat:no-repeat;
+  background-size:auto 150%;background-position:132% 48%}
+.silo svg{display:block;width:100%;height:100%}
+
+/* 사진 띠 (듀오톤) */
+.strip{position:absolute;left:0;right:0;top:0;bottom:44mm;display:flex;gap:0}
+.strip>div{flex:1 1 0;min-width:0;height:100%}
+.ph{background:var(--ink);overflow:hidden;height:100%;position:relative}
+.pcap{position:absolute;left:1.6mm;bottom:1.6mm;font:400 1.8mm/1.3 "IBM Plex Mono";
+  color:#FFFFFF;text-shadow:0 .2mm .6mm rgba(0,0,0,.9);letter-spacing:0}
+.pcap b{font-weight:500}
+.ph img{display:block;width:100%;height:100%;object-fit:cover;
+        filter:grayscale(1) contrast(1.12) brightness(1.04);mix-blend-mode:screen}
+body.raw .ph,.ph.color{background:transparent}
+body.raw .ph img,.ph.color img{filter:none;mix-blend-mode:normal}
+.ccap{font:400 1.9mm/1.45 "IBM Plex Mono";color:#6b6b6b;margin-top:1.2mm;letter-spacing:0}
+.ccap b{color:var(--ink);font-weight:400}
+
+/* 지도 */
+.mapwrap{position:absolute;display:flex;align-items:center;justify-content:center}
+.mapwrap .stack{position:relative;height:148mm}
+.mapwrap img{height:148mm;width:auto;display:block}
+/* 받아온 바탕 지도는 boundary.svg 와 같은 bbox 라 겹치면 그대로 맞는다.
+   ★바탕이 절대배치라 가만두면 트랙 위를 덮는다. SVG 쪽을 올려놔야 한다 */
+.mapwrap .bm{position:absolute;inset:0;width:100%;height:100%}
+.mapwrap .stack img:not(.bm){position:relative;z-index:1}
+.scale{position:absolute;font:400 2.2mm "IBM Plex Mono";color:#7a7a7a}
+.sbar{position:absolute;left:4mm;bottom:4mm;z-index:2;display:flex;align-items:center;gap:1.4mm}
+.sbar i{display:block;height:1.1mm;border:.28mm solid var(--ink);border-top:0;
+        background:linear-gradient(90deg,var(--ink) 50%,transparent 50%)}
+.sbar span{font:500 2.1mm "IBM Plex Mono";color:var(--ink)}
+.scale i{display:block;height:1mm;border:.3mm solid #7a7a7a;border-top:0;margin-bottom:.8mm}
+
+/* QR */
+.qr{width:28mm;height:28mm;border:.4mm solid #1a1a1a;display:flex;align-items:center;justify-content:center;
+    text-align:center;font:400 2.2mm/1.4 "IBM Plex Mono";color:#555}
+.spec{font:400 2mm/1.55 "IBM Plex Mono";color:#3a3a3a;white-space:pre-wrap}
+
+@media print{
+  body{background:#fff;padding:0}
+  #bar,.cap{display:none}
+  .sheet{zoom:1;margin:0;box-shadow:none;break-after:page}
+  @page single{size:210mm 148mm;margin:0}
+  @page dbl{size:420mm 148mm;margin:0}
+  .sheet{page:single} .spread{page:dbl}
+}
+</style>
+</head>
+<body class="g">
+
+<div id="bar">
+  <b>인쇄 구성안 · 파랑</b> <span>A5 가로 210×148mm / 펼침 420×148 / 8쪽</span>
+  <label>잉크 <select id="sw" style="background:#18151380;color:#ddd;border:1px solid #3a3530;font:inherit;padding:2px 6px">
+    <option value="cobalt">코발트 C100 M88 — #1F3B83</option>
+    <option value="azure">선명한 파랑 C100 M25 — #0084C0</option>
+  </select></label>
+  <span id="swnote" style="color:#8d8578"></span>
+  <span id="rev" title="원고 개정판. 화면에만 보이고 인쇄에는 안 나간다"></span>
+  <label>배율 <input type="range" id="zm" min="20" max="100" value="45"><span id="zv">45%</span></label>
+  <label><input type="checkbox" id="gd" checked> 판면 가이드 (g)</label>
+  <label><input type="checkbox" id="rw"> 원본 컬러 (r)</label>
+</div>
+
+<!-- ───────────── p1 ───────────── -->
+<div class="cap">p1-2 <i>펼침</i> 여는 면 : 왼쪽은 계단식 제목, 오른쪽은 능선 실루엣</div>
+<div class="sheet spread" id="s1">
+  <div class="guide"></div><div class="fold"></div>
+  <div class="band" style="position:absolute;inset:0"></div>
+  <div class="cascade" style="position:absolute;left:12mm;top:14mm;z-index:2">
+    <div class="cl" style="--i:0">MOUNTAINS</div>
+    <div class="cl" style="--i:1">THROUGH</div>
+    <div class="cl" style="--i:2">A TRAIL</div>
+    <div class="cl" style="--i:3">RUNNER’S EYES</div>
+    <div class="cl kr" style="--i:0">산을 달리며</div>
+    <div class="cl kr" style="--i:1">바라본</div>
+    <div class="cl kr" style="--i:2">은평의<span class="rule"></span>산</div>
+  </div>
+  <div class="num" style="position:absolute;right:12mm;top:14mm;color:var(--paper);text-align:right;z-index:2;line-height:2">
+    2026.10.25 &nbsp;/&nbsp; 은둘길 21.25 km<br>은평의 산 문화 기록<br>은평로컬기록가 2기 Noe
+  </div>
+  <!-- 우측 바닥에 지도가 살짝 비친다. 왼쪽 끝은 그라데이션으로 사라진다.
+       ★multiply 로 얹는다 — 종이색 바탕은 빨강 그대로 두고 지도의 획만 어둡게 눌러서
+         "빨강 위에 빨강"으로 비친다. 흰 지도를 얹으면 면이 뚫린 것처럼 보인다. -->
+  <div class="peek">
+    <i style="background-image:url(basemap_cobalt.png)"></i>
+    <i style="background-image:url(boundary_cobalt.svg)"></i>
+  </div>
+  <div class="silo" id="silo" style="bottom:0;height:43mm"></div>
+</div>
+
+<div class="cap">p3-4 <i>펼침</i> 은평둘레길 : 제목은 왼쪽 면 안, 능선은 풀블리드</div>
+<div class="sheet spread" id="s2">
+  <div class="guide"></div><div class="fold"></div>
+  <!-- ★제목은 왼쪽 면 안에서만 꽉 채운다. 펼침 전체로 늘리면 접지선이 글자를 자른다 -->
+  <div style="position:absolute;left:12mm;width:186mm;top:12mm">
+    <div class="disp fit kr" style="letter-spacing:-.05em">은평둘레길</div>
+  </div>
+  <!-- 본문은 아주 작게, 한 덩어리로. 거대한 것 옆에 붙는 주석이다 -->
+  <!-- 본문은 제목 아래 2단. 거터(210mm) 안 넘게 150mm 안에서 끝낸다 -->
+  <div class="body two" style="position:absolute;left:12mm;top:50mm;width:150mm;column-gap:6mm">
+    <p style="text-indent:0">봉산해맞이길, 앵봉산 생태길, 백련산 불광천길, 은평 북한산 둘레길, 이말산 묘역길. 은평둘레길은 다섯 개 구간으로 이루어져 있으며, 봉산과 앵봉산, 백련산, 북한산, 이말산을 지난다. 내가 속한 구파발천 러닝크루 GSRC에서는 봉산과 앵봉산을 묶어 ‘봉앵봉’이라 부른다.</p>
+    <p>산에는 경계가 없다. 능선은 봉산에서 북한산까지 이어진다. 경계를 나눈 것은 사람이다. 산길에는 이름이 붙고, 행정구역은 구와 동으로 나뉜다.</p>
+    <p>2026년 7월 12일과 10월 25일, 두 차례 은평둘레길을 달렸다. 두 번의 주행 경로는 조금씩 달랐다. 아래는 10월 25일 달린 코스의 고도 프로파일이다. 최저 고도는 18 m, 최고 고도는 233 m였다.</p>
+    <p>사진과 영상을 촬영한 위치에는 점을 표시했다. 점의 농도는 촬영 당시의 심박을 나타낸다.</p>
+  </div>
+  <div style="position:absolute;right:12mm;top:16mm;text-align:right">
+    <div class="disp" style="font-size:22mm;line-height:.9">21.25<span style="font-size:7mm;text-transform:none"> km</span></div>
+    <div class="num" style="margin-top:2mm;line-height:1.9">누적 상승 1,171 m / 4시간 52분<br>평균 심박 141 bpm / 최고 심박 180 bpm<br>고도 18–233 m</div>
+  </div>
+  <div class="ridge" id="ridge"></div>
+  <div class="axis" id="axis"></div>
+  <!-- ★범례는 거리축 아래 빈 자리(바닥 0~15.5mm)에 둔다. 4줄이면 14.9mm 라 거리축을 밀거나
+       재단선에 1mm 까지 붙는다 — 2줄로 접어야 들어간다. 위로 올리면 능선 위에 올라탄다. -->
+  <div class="num" id="legend2" style="position:absolute;left:12mm;bottom:6mm;line-height:1.7"></div>
+
+</div>
+
+<div class="cap">p5-6 <i>펼침</i> 몸의 궤적 : 사진을 판면 끝에서 끝까지, 간격 없이</div>
+<div class="sheet spread" id="s4">
+  <div class="fold"></div>
+  <div class="strip" id="strip"></div>
+  <div class="band" style="position:absolute;left:0;right:0;bottom:0;height:44mm;padding:6mm 12mm 14mm">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <!-- ★표제를 띠 위로 올려 사진에 걸친다. fitDisp() 가 부모 폭에 맞추므로 크기는 width 로 준다 -->
+      <div style="width:150mm;flex:0 0 auto;margin-top:-15mm"><div class="disp fit kr" style="color:var(--paper);line-height:.86">몸의 궤적</div></div>
+      <div class="body" style="width:96mm;font-size:2.6mm;color:var(--paper);text-align:left">
+        <p style="text-indent:0">코스를 열 구간으로 나누고, 각 구간에서 심박이 가장 높았던 순간의 사진을 한 장씩 골랐다. 사진의 구도보다 촬영 당시의 몸 상태를 기준으로 삼았다. 초점이 흐려진 사진도 그대로 남겼다.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ───────────── p6-7 ───────────── -->
+
+<div class="cap">p7-8 <i>펼침</i> 다섯 개의 산 : 왼쪽은 빨강 글면 126mm + 데이터 단, 오른쪽은 지도 + QR</div>
+<div class="sheet spread" id="s6">
+  <div class="fold"></div>
+  <!-- 왼쪽 면 전체가 빨강. 글자는 종이색으로 뒤집힌다 -->
+  <!-- ★빨강 면 140 → 126mm. 옆 데이터 단이 65mm 밖에 안 남아 명세를 1.8mm 로 눌러야 했다.
+       14mm 를 넘겨주면 명세가 제 크기(2mm)로 돌아온다. -->
+  <div class="band" style="position:absolute;left:0;top:0;width:126mm;bottom:0;padding:14mm 12mm 10mm">
+    <div style="width:102mm">
+      <div class="disp fit kr" style="color:var(--paper);line-height:.92">다섯 개의 산</div>
+      <div class="disp fit kr" style="color:var(--paper);line-height:.92">하나로 이어진 은평</div>
+    </div>
+    <div class="body" style="margin-top:7mm;width:102mm;color:var(--paper);font-size:2.6mm">
+      <p style="text-indent:0">은평둘레길을 달린 궤적을 위에서 내려다보면 하나의 선이 된다. 시작점과 끝점이 맞닿은 닫힌 고리다. 고리 안쪽에는 길 대신 도시가 들어서 있다.</p>
+      <p>점선은 행정구역의 경계를 나타낸다. 서쪽으로 갈수록 달려온 길은 행정구역의 경계와 나란히 이어진다. 산과 산을 잇는 능선은 은평과 고양을 나누는 경계가 된다. 서대문과의 경계에서도 일부 구간이 능선과 겹친다.</p>
+      <p>행정구역의 경계와 산의 분수령이 실제로 얼마나 일치하는지 확인해 보았다. 은평과 고양의 경계 7.49 km 중 70.3%는 산의 능선을 따라 이어졌다. 반면 은평과 마포의 경계에서는 분수령과 일치하는 구간이 없었다. 같은 행정구역의 경계라도 산을 지나는 곳과 도시를 지나는 곳은 서로 다른 모습을 보였다.</p>
+    </div>
+    <div class="num" style="position:absolute;left:12mm;bottom:16mm;color:var(--paper);opacity:.8;line-height:1.8">
+      구 경계 통과 16회 / 행정동 14개<br>은평 16.97 km / 서대문 2.27 km / 고양 2.00 km
+    </div>
+  </div>
+  <div class="mapwrap" style="left:222mm;width:96mm;top:0;bottom:0">
+    <div class="stack">
+      <img class="bm" src="basemap_cobalt.png" data-bm="1" alt="">
+      <img src="boundary_cobalt.svg" data-bd="1" alt="은둘길 트랙 + 행정경계">
+      <div class="sbar" id="sbar"><i></i><span>1 km</span></div>
+    </div>
+  </div>
+  <!-- 왼쪽 면에 남은 흰 띠(빨강 140mm ~ 접지 210mm)에 숫자와 명세를 앉힌다.
+       ★접지에서 10mm 는 띄운다 — 208mm 를 넘기면 글줄이 거터로 들어간다.
+       ★명세 글자는 기본 2mm 로 둔다. 줄을 짧게 접어 66mm 안에 넣었다 — 글자를 줄이는 쪽이 아니다. -->
+  <div style="position:absolute;left:133mm;width:67mm;top:14mm">
+    <div style="display:flex;align-items:baseline;gap:3mm">
+      <div class="disp" style="font-size:14mm;line-height:.85" id="bignum">249</div>
+      <div class="hd" style="font-size:3.9mm">CUTS</div>
+    </div>
+    <div class="num" id="cutline" style="letter-spacing:.14em;margin:2mm 0 5mm"></div>
+    <div class="spec" id="spec"></div>
+  </div>
+
+  <!-- 오른쪽 아래 구석 : QR 과 웹 안내. 위를 통째로 비워 여백을 준다 -->
+  <div style="position:absolute;right:12mm;bottom:22mm;width:62mm">
+    <div class="qr" style="width:20mm;height:20mm">QR 22 × 22 mm</div>
+    <div style="height:.22mm;background:var(--ink);opacity:.45;margin:5mm 0 4mm"></div>
+    <div class="body" style="font-size:2.2mm">
+      <p style="text-indent:0"><b>인쇄물에 담은 사진은 249컷 가운데 열 장이다.</b> 나머지는 웹에 담았다. 화면 아래에는 코스 전체의 고도 그래프가 놓여 있다. 그래프를 드래그하면 해당 지점에서 촬영한 사진과 영상이 나타난다. 심박이 높았던 구간일수록 화면의 흔들림도 커지도록 했다.</p>
+      <p style="text-indent:0;margin-top:2.4mm">카메라 사용을 허용하면 손동작으로도 사진을 넘길 수 있다. 카메라 앞에 손바닥을 펴고 달리듯 위아래로 움직이면 사진이 한 컷씩 넘어간다. 내가 달리며 마주한 풍경을 화면 너머에서도 달리는 몸으로 경험할 수 있기를 바랐다. * 손동작 인식에 사용되는 카메라 영상은 기기 내부에서 처리되며 외부로 전송되지 않는다.</p>
+    </div>
+  </div>
+  <!-- 판권. ★지도 위에 얹지 말 것 — 4줄이라 트랙 위를 덮는다(한 줄일 땐 티가 안 났다).
+       왼쪽 흰 띠의 명세 아래 빈 자리로 내렸다. -->
+  <div class="num" style="position:absolute;left:133mm;width:67mm;bottom:14mm;font-size:1.7mm;line-height:1.6;opacity:.75">
+    행정구역 경계: 통계청, 2018년 자료<br>바탕 지도: © OpenTopoMap<br>지도 데이터: © OpenStreetMap contributors<br>지형 데이터: SRTM
+  </div>
+
+</div>
+
+<!-- ───────────── p8 ───────────── -->
+
+<!-- D blob (app.js 에서 뽑아온 것). ★app.js 를 고치면 다시 뽑아야 한다 -->
+<script>
+// ══ 원고 개정판 ══════════════════════════════════════════════
+//  ★원고를 고치면 이 값을 올린다. 화면 상단 막대에 찍혀서, 스크린샷만 봐도
+//    어느 판인지 알 수 있다. 낡은 복사본이 돌아다니다 "이거 왜 옛날 글이야" 로
+//    헛도는 걸 막으려는 것이다(2026-11-04 실제로 그랬다).
+//  ★`copy.txt` 와 `PRINT.md` §3 머리말의 값과 **같아야 한다.** 셋이 한 벌이다.
+//  ★#bar 는 @media print 에서 숨으므로 인쇄물/PDF 에는 안 찍힌다.
+const COPY_REV='2026-11-25a';
+addEventListener('DOMContentLoaded',()=>{
+  const el=document.getElementById('rev');
+  if(el)el.textContent='원고 rev '+COPY_REV;
+});
+</script>
+<script>document.write('<scr'+'ipt src="data.js?t='+Date.now()+'"></scr'+'ipt>')</script>
+<script>
+const D = window.D, PH = D.photos.slice().sort((a,b)=>a.km-b.km);
+const T = D.total, PR = D.prof;
+const EMIN = Math.min(...PR.map(p=>p[1])), EMAX = Math.max(...PR.map(p=>p[1]));
+
+// 능선 좌표계 : viewBox 0 0 1000 100, 세로는 꽉 채운다 (preserveAspectRatio=none)
+const X = km => km / T * 1000;
+// ★바닥 여유 12. 4로 두면 최저 고도 구간의 컷 점이 띠에 먹혀 안 보인다(실제로 그랬다).
+const Y = e  => 100 - (e - EMIN) / (EMAX - EMIN) * 78 - 12;
+const eleAt = km => {
+  if (km <= PR[0][0]) return PR[0][1];
+  const last = PR[PR.length-1];
+  if (km >= last[0]) return last[1];
+  for (let i=1;i<PR.length;i++) if (PR[i][0] >= km) {
+    const [k0,e0]=PR[i-1], [k1,e1]=PR[i];
+    return e0 + (e1-e0) * (km-k0) / (k1-k0);
+  }
+  return last[1];
+};
+const line = PR.map((p,i)=>(i?'L':'M')+X(p[0]).toFixed(2)+','+Y(p[1]).toFixed(2)).join(' ');
+
+// 심박 → 농도 3단계. app.js hrHex와 같은 분기 ((hr-120)/60 > .6 / > .3)
+const dens = hr => { const t=(hr-120)/60; return t>.6 ? 1 : t>.3 ? .6 : .3; };
+
+// p2-3 능선 띠
+document.getElementById('ridge').innerHTML =
+  `<svg viewBox="0 0 1000 100" preserveAspectRatio="none">
+     <path d="${line} L1000,100 L0,100 Z" fill="var(--ink)" opacity=".10"/>
+     <path d="${line}" fill="none" stroke="var(--ink)" stroke-width="1.1" vector-effect="non-scaling-stroke"/>
+     ${PH.map(p=>{
+        const x=X(p.km).toFixed(2), y=Y(eleAt(p.km)).toFixed(2), o=dens(p.hr);
+        const r = p.t==='v' ? 3.4 : 2.4;
+        return p.d===7
+          ? `<rect x="${x-r}" y="${y-r}" width="${r*2}" height="${r*2}" transform="rotate(45 ${x} ${y})" fill="var(--ink)" opacity="${o}"/>`
+          : `<circle cx="${x}" cy="${y}" r="${r}" fill="var(--ink)" opacity="${o}"/>`;
+     }).join('')}
+   </svg>`;
+
+// p2-3 거리축
+// ★양 끝 라벨은 가운데 정렬을 풀어야 한다. translateX(-50%) 로는 재단선 밖으로 나간다.
+document.getElementById('axis').innerHTML =
+  // ★20 은 뺐다 — 21.25 km 라벨과 0.8mm 밖에 안 떨어져 한 덩어리로 읽힌다
+  [0,5,10,15,T].map((k,i,a)=>{
+    const first=i===0, last=i===a.length-1;
+    const pos=first?'left:12mm':last?'right:12mm':`left:${(k/T*100).toFixed(2)}%`;
+    const tf=(first||last)?'transform:none':'';
+    return `<span style="${pos};${tf}">${last?T.toFixed(2)+' km':k}</span>`;
+  }).join('');
+
+// ── 판면을 꽉 채우는 글자 ──
+//  ★width:100% 로는 글자가 안 커진다. 실제로 재서 font-size 를 맞춰야 한다.
+//    benvenusa 의 워드마크처럼 한 줄이 판면 좌우에 정확히 닿게 한다.
+//  폰트가 늦게 오면 폭이 바뀌므로 document.fonts.ready 뒤에 한 번 더 돌린다.
+function fitDisp(){
+  document.querySelectorAll('.disp.fit').forEach(el=>{
+    const box=el.parentElement.getBoundingClientRect().width;
+    if(!box)return;
+    el.style.fontSize='100px';                     // 기준값으로 재고 비례로 맞춘다
+    // ★scrollWidth 는 블록 폭(=부모 폭)을 돌려줘서 비율이 늘 1 이 된다.
+    //   Range 로 글자 자체의 폭을 재야 한다.
+    const r=document.createRange(); r.selectNodeContents(el);
+    const w=r.getBoundingClientRect().width;
+    if(!w)return;
+    el.style.fontSize=(100*box/w).toFixed(2)+'px';
+  });
+}
+fitDisp();
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitDisp);
+addEventListener('resize',fitDisp);
+
+// p1 능선 실루엣 (p2-3과 같은 곡선)
+// ★능선 **아래**를 종이색으로 채운다. 빨강 면에서 산을 깎아낸 모양이 된다.
+//   옛 방식(산을 빨강으로 채우기)은 종이 위에 빨간 산이었다. 지금은 빨간 면에 흰 산이다.
+document.getElementById('silo').innerHTML =
+  `<svg viewBox="0 0 1000 100" preserveAspectRatio="none"><path d="${line} L1000,100 L0,100 Z" fill="var(--paper)"/></svg>`;
+
+// ── p4-5 사진 띠 : 간격 없이 판면을 꽉 채운다 ──
+//  ★세로 사진을 세로로 긴 칸에 cover 로 넣는다. 가로가 잘리지만 그게 의도다 —
+//    참고한 benvenusa 처럼 이미지가 재단선까지 닿아야 면이 산다.
+const SEL=(function(){
+  // 코스를 10등분, 각 구간에서 심박이 가장 높은 **10/25 본촬영 세로 사진**
+  const LAND=new Set(['IMG_8831','IMG_8837','IMG_8866','IMG_8890','IMG_8902','IMG_8998','IMG_9054']);
+  const pool=PH.filter(p=>p.d===10&&p.t==='p'&&!LAND.has(p.n));
+  const seg=T/10, out=[];
+  for(let i=0;i<10;i++){
+    const c=pool.filter(p=>p.km>=i*seg&&p.km<(i+1)*seg).sort((a,b)=>b.hr-a.hr);
+    if(c[0])out.push(c[0]);
+  }
+  return out;
+})();
+// ★캡션은 사진 칸 안에 넣는다. 한 줄로 쭉 쓰면 거터를 가로지른다(실제로 그랬다).
+document.getElementById('strip').innerHTML=SEL.map((p,i)=>
+  `<div><div class="ph"><img src="../web/${p.n}.jpg" alt="${p.n}">
+     <div class="pcap"><b>${String(i+1).padStart(2,'0')}</b> ${p.km.toFixed(2)} km ${p.hr} bpm</div>
+   </div></div>`).join('');
+
+// ── 숫자와 명세 ──
+const nP=D.photos.filter(p=>p.t==='p').length, nV=D.photos.filter(p=>p.t==='v').length;
+const n10=D.photos.filter(p=>p.d===10).length, n7=D.photos.filter(p=>p.d===7).length;
+document.getElementById('bignum').textContent=D.photos.length;   // 단위 '컷' 은 마크업에 고정
+document.getElementById('cutline').innerHTML=
+  'PHOTO '+nP+' / VIDEO '+nV+'<br>OCTOBER '+n10+' / JULY '+n7;
+document.getElementById('legend2').innerHTML=
+  D.photos.length+' CUTS &nbsp; ○ PHOTO '+nP+' / ◎ VIDEO '+nV+
+  '<br>◇ JULY '+n7+' / OCTOBER '+n10+' &nbsp; 점의 농도 = 심박';
+document.getElementById('spec').textContent=
+`본촬영   2026.10.25 (일)  08:23:28–14:56:36
+         21.25 km / 달린 시간 4시간 52분 / 누적 상승 1,171 m
+         평균 심박 141 bpm / 최고 심박 180 bpm
+         고도 18–233 m
+
+답사     2026.07.12 (일)  06:12–11:34
+         22.99 km / 달린 시간 4시간 52분 / 누적 상승 949 m
+         평균 심박 153 bpm / 최고 심박 180 bpm
+         고도 0–232 m
+
+기록     `+D.photos.length+`컷 (사진 `+nP+` / 영상 `+nV+`)
+         10월 `+n10+`컷 + 7월 `+n7+`컷
+         GPS 전 구간 기록
+         사진과 영상 기록 사이의 최대 공백 1.28 km
+
+장비     COROS PACE 3 (GPS 기록 14,607점, 1초 간격)
+         iPhone 16 Pro 기본 카메라 / TimeStamp Camera
+
+경계     구 경계 통과 16회
+         은평 ↔ 고양시 덕양구 10회 / 은평 ↔ 서대문구 6회
+         은평구 내 행정동 14개 통과`;
+
+// ── 거터 검사 ──
+//  ★펼침면에서 글 덩어리가 가운데(210mm 접지선)를 가로지르면 안 된다.
+//    책을 펼쳐도 그 자리는 꺾여 있어서 글줄이 끊겨 읽힌다. 실제로 그렇게 조판했다가 지적받았다.
+//  사진 띠와 면 띠는 가로질러도 된다(오히려 그래야 한다). 글자만 본다.
+function gutterCheck(){
+  const bad=[];
+  document.querySelectorAll('.sheet.spread').forEach(sh=>{
+    const r=sh.getBoundingClientRect(), fold=r.left+r.width/2;
+    sh.querySelectorAll('.body,.body p,.num,.spec,.disp').forEach(el=>{
+      if(!el.textContent.trim())return;
+      const q=document.createRange(); q.selectNodeContents(el);
+      for(const line of q.getClientRects()){
+        if(line.width<4)continue;
+        if(line.left<fold-1&&line.right>fold+1)
+          bad.push(sh.id+' / '+el.className+' / "'+el.textContent.trim().slice(0,24)+'"');
+      }
+    });
+  });
+  const u=[...new Set(bad)];
+  if(u.length)console.warn('★거터를 가로지르는 글줄 '+u.length+'건\n'+u.join('\n'));
+  else console.log('거터 검사 통과 — 가로지르는 글줄 없음');
+  return u;
+}
+window.gutterCheck=gutterCheck;
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>setTimeout(gutterCheck,120));
+
+// 조작부
+const zm=document.getElementById('zm'), zv=document.getElementById('zv');
+const setZ = v => { document.documentElement.style.setProperty('--z', v/100); zv.textContent = v+'%'; };
+zm.oninput = e => setZ(e.target.value);
+const fit = Math.max(20, Math.min(100, Math.floor((innerWidth-60)/(420*96/25.4)*100)));
+zm.value = fit; setZ(fit);
+document.getElementById('gd').onchange = e => document.body.classList.toggle('g', e.target.checked);
+document.getElementById('rw').onchange = e => document.body.classList.toggle('raw', e.target.checked);
+onkeydown = e => {
+  if (e.key==='g') document.getElementById('gd').click();
+  if (e.key==='r') document.getElementById('rw').click();
+};
+</script>
+<script>
+/* ── 잉크 토글 ─────────────────────────────────────────────────
+   조판은 그대로 두고 --ink 와 바탕 지도·경계 사본만 갈아끼운다.
+   두 색 다 K 0 단일톤이고, 지도 두 장은 같은 회색 램프를 다른 색으로 입힌 것뿐이다. */
+const INKS = {
+  cobalt: {hex:'#1F3B83', suffix:'cobalt',
+    note:'코발트 #0047AB 에 가장 가까운 인쇄색. ΔE 16.3 / 채도 61.6→46.4 / L* 31.8→26.1'},
+  azure:  {hex:'#0084C0', suffix:'blue',
+    note:'파랑 중 채도 최고. L* 49.4 라 빨강(51.1)과 밝기가 같다'}
+};
+function setInk(key){
+  const k = INKS[key];
+  document.documentElement.style.setProperty('--ink', k.hex);
+  document.querySelectorAll('[data-bm]').forEach(i => i.src = 'basemap_' + k.suffix + '.png');
+  document.querySelectorAll('[data-bd]').forEach(i => i.src = 'boundary_' + k.suffix + '.svg');
+  document.querySelectorAll('.peek i').forEach(i => {
+    i.style.backgroundImage = i.style.backgroundImage
+      .replace(/basemap_\w+\.png/, 'basemap_' + k.suffix + '.png')
+      .replace(/boundary_\w+\.svg/, 'boundary_' + k.suffix + '.svg');
+  });
+  document.getElementById('swnote').textContent = k.note;
+}
+document.getElementById('sw').onchange = e => setInk(e.target.value);
+setInk('cobalt');
+</script>
+</body>
+</html>
